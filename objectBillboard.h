@@ -1,0 +1,108 @@
+//=============================================================================
+//
+// ビルボード処理 [objectBillboard.h]
+// Author : RIKU TANEKAWA
+//
+//=============================================================================
+#ifndef _OBJECTBILLBOARD_H_// このマクロ定義がされていなかったら
+#define _OBJECTBILLBOARD_H_// 2重インクルード防止のマクロ定義
+
+//*****************************************************************************
+// インクルードファイル
+//*****************************************************************************
+#include "object.h"
+
+
+//*****************************************************************************
+// ビルボードクラス
+//*****************************************************************************
+class CObjectBillboard : public CObject
+{
+public:
+	CObjectBillboard(int nPriority = 5);
+	~CObjectBillboard();
+
+	//*************************************************************************
+	// ビルボード生成テンプレート
+	//*************************************************************************
+	// billboardType : 生成したいビルボードクラス名
+	template <typename billboardType>
+	static CObjectBillboard* Create(const char* path, D3DXVECTOR3 pos, float fWidth, float fHeight)
+	{
+		// 渡された型がCObjectBillboardを継承していなかった場合
+		static_assert(std::is_base_of<CObjectBillboard, billboardType>::value, "型はCObjectBillboardを継承していません。");
+
+		billboardType* pBillboard = new billboardType();// 型のインスタンス生成
+
+		if (!pBillboard)
+		{
+			return nullptr;
+		}
+
+		pBillboard->SetPath(path);
+		pBillboard->m_pos = pos;
+		pBillboard->m_fSize = fWidth;// エフェクトの半径
+		pBillboard->SetHeight(fHeight);
+		pBillboard->m_col = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
+
+		// 初期化処理
+		pBillboard->Init();
+
+		return pBillboard;
+	}
+
+	HRESULT Init(void);
+	void Uninit(void);
+	void Update(void);
+	void Draw(void);
+
+	void SetPos(D3DXVECTOR3 pos) { m_pos = pos; }
+	void SetCol(D3DXCOLOR col) { m_col = col; }
+	void SetSize(float fRadius) { m_fSize = fRadius; }
+	void SetHeight(float fHeight) { m_fHeight = fHeight; }
+	void SetPath(const char* path) { strcpy_s(m_szPath, MAX_PATH, path); }
+
+	D3DXVECTOR3 GetPos(void) { return m_pos; }
+	D3DXCOLOR GetCol(void) { return m_col; }
+
+private:
+	LPDIRECT3DVERTEXBUFFER9 m_pVtxBuff;		// 頂点バッファへのポインタ
+	D3DXVECTOR3 m_pos;						// 位置
+	D3DXCOLOR m_col;						// 色
+	D3DXMATRIX m_mtxWorld;					// ワールドマトリックス
+	float m_fSize;							// サイズ(エフェクト半径)
+	float m_fHeight;						// サイズ(ビルボード)
+	int m_nIdxTexture;						// テクスチャインデックス
+	char m_szPath[MAX_PATH];				// ファイルパス
+};
+
+//*****************************************************************************
+// ヒントビルボードクラス
+//*****************************************************************************
+class CHintBillboard : public CObjectBillboard
+{
+public:
+	CHintBillboard();
+	~CHintBillboard();
+
+	// ビルボードの状態
+	typedef enum
+	{
+		STATE_FADEIN = 0,
+		STATE_NORMAL,
+		STATE_FADEOUT,
+		STATE_MAX
+	}STATE;
+
+	HRESULT Init(void);
+	void Uninit(void);
+	void Update(void);
+	void Draw(void);
+
+private:
+	float m_fAlpha;	// アルファ値
+	STATE m_state;	// 状態
+
+};
+
+#endif
