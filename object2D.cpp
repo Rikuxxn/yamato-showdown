@@ -316,7 +316,7 @@ void CObject2D::UpdateFrame(void)
 	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
 
 	// フレームのサイズオフセット
-	float offset = 4.0f;
+	float offset = 3.0f;
 
 	pVtx[0].pos = D3DXVECTOR3(m_pos.x - offset, m_pos.y - m_fHeight - offset, 0.0f);
 	pVtx[1].pos = D3DXVECTOR3(m_pos.x + m_fWidth + offset, m_pos.y - m_fHeight - offset, 0.0f);

@@ -72,21 +72,13 @@ public:
 	// getter関数
 	//*****************************************************************************
 	CMotion* GetMotion(void) { return m_pMotion; }
-	D3DXVECTOR3 GetPos(void) { return m_pos; }
-	D3DXVECTOR3 GetRot(void) { return m_rot; };
-	D3DXVECTOR3 GetSize(void) { return m_size; }
 	D3DXVECTOR3 GetMove(void) const { return m_move; }
-	D3DXVECTOR3 GetColliderPos(void) const { return m_colliderPos; }
-	btScalar GetRadius(void) const { return m_radius; }
-	btScalar GetHeight(void) const { return m_height; }
-	btRigidBody* GetRigidBody(void) const { return m_pRigidBody; }						// RigidBodyの取得
 	bool GetPlayerUse(void) const { return m_playerUse; }
 	bool GetOnGround(void) { return m_bOnGround; }
 	bool GetIsMoving(void) const { return m_bIsMoving; }
-	D3DXVECTOR3 GetForward(void) const;
+	D3DXVECTOR3 GetForward(void);
 	InputData GatherInput(void);
 	CBlock* FindFrontBlockByRaycast(float rayLength);
-	void ReleasePhysics(void);														// Physics破棄用
 
 	// ステート用にフラグ更新
 	void UpdateMovementFlags(const D3DXVECTOR3& moveDir)
@@ -95,29 +87,17 @@ public:
 	}
 
 private:
-	static constexpr int MAX_PARTS = 32;	// 最大パーツ数
-	static constexpr float MAX_GRAVITY = -0.26f;		// 重力加速度
-	static constexpr float CAPSULE_RADIUS = 10.5f;					// カプセルコライダーの半径
-	static constexpr float CAPSULE_HEIGHT = 45.5f;					// カプセルコライダーの高さ
+	static constexpr int MAX_PARTS			= 32;		// 最大パーツ数
+	static constexpr float MAX_GRAVITY		= -0.26f;	// 重力加速度
+	static constexpr float CAPSULE_RADIUS	= 10.5f;	// カプセルコライダーの半径
+	static constexpr float CAPSULE_HEIGHT	= 45.5f;	// カプセルコライダーの高さ
 
-	D3DXVECTOR3 m_pos;					// 位置
-	D3DXVECTOR3 m_rot;					// 向き
-	D3DXVECTOR3 m_rotDest;				// 向き
 	D3DXVECTOR3 m_move;					// 移動量
-	D3DXVECTOR3 m_targetMove;			// 目標速度
-	D3DXVECTOR3 m_currentMove;			// 実際の移動速度
-	D3DXVECTOR3 m_size;					// サイズ
-	D3DXVECTOR3 m_colliderPos;			// カプセルコライダーの位置
 	D3DXMATRIX m_mtxWorld;				// ワールドマトリックス
 	CModel* m_apModel[MAX_PARTS];		// モデル(パーツ)へのポインタ
 	CShadowS* m_pShadowS;				// ステンシルシャドウへのポインタ
 	CMotion* m_pMotion;					// モーションへのポインタ
-	btRigidBody* m_pRigidBody;			// 剛体へのポインタ
-	btCollisionShape* m_pShape;			// 当たり判定の形へのポインタ
 	CDebugProc3D* m_pDebug3D;			// 3Dデバッグ表示へのポインタ
-	btScalar m_radius;					// カプセルコライダーの半径
-	btScalar m_height;					// カプセルコライダーの高さ
-	CBlock* m_pCarryingBlock;			// 運んでいるブロック
 	int m_nNumModel;					// モデル(パーツ)の総数
 	bool m_playerUse;					// 使われているかどうか
 	bool m_bIsMoving;					// 移動入力フラグ

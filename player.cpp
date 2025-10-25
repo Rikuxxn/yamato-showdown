@@ -25,24 +25,15 @@ CPlayer::CPlayer()
 {
 	// 値のクリア
 	memset(m_apModel, 0, sizeof(m_apModel));			// モデル(パーツ)へのポインタ
-	m_pos				= INIT_VEC3;					// 位置
-	m_rot				= INIT_VEC3;					// 向き
-	m_rotDest			= INIT_VEC3;					// 向き
 	m_move				= INIT_VEC3;					// 移動量
-	m_size				= D3DXVECTOR3(1.0f, 1.0f, 1.0f);// サイズ
 	m_mtxWorld			= {};							// ワールドマトリックス
 	m_nNumModel			= 0;							// モデル(パーツ)の総数
 	m_playerUse			= true;							// 使われているかどうか
 	m_pShadowS			= nullptr;						// ステンシルシャドウへのポインタ
 	m_pMotion			= nullptr;						// モーションへのポインタ
 	m_bIsMoving			= false;						// 移動入力フラグ
-	m_pRigidBody		= nullptr;						// 剛体へのポインタ
 	m_bOnGround			= false;						// 接地フラグ
-	m_pShape			= nullptr;						// 当たり判定の形へのポインタ
 	m_pDebug3D			= nullptr;						// 3Dデバッグ表示へのポインタ
-	m_radius			= 0.0f;							// カプセルコライダーの半径
-	m_height			= 0.0f;							// カプセルコライダーの高さ
-	m_colliderPos		= INIT_VEC3;					// コライダーの位置
 	m_particleTimer		= 0;							// パーティクルタイマー
 }
 //=============================================================================
@@ -59,8 +50,8 @@ CPlayer* CPlayer::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot)
 {
 	CPlayer* pPlayer = new CPlayer;
 
-	pPlayer->m_pos = pos;
-	pPlayer->m_rot = D3DXToRadian(rot);
+	pPlayer->SetPos(pos);
+	pPlayer->SetRot(D3DXToRadian(rot));
 
 	// 初期化処理
 	pPlayer->Init();
@@ -93,53 +84,14 @@ HRESULT CPlayer::Init(void)
 	// プレイヤーが使われている
 	m_playerUse = true;
 
-	// 変数の初期化
-	m_rot = D3DXVECTOR3(0.0f, -D3DX_PI, 0.0f);
+	// 最初の向き
+	SetRot(D3DXVECTOR3(0.0f, -D3DX_PI, 0.0f));
 
-	//*********************************************************************
-	// Bullet Physics カプセルコライダーの設定
-	//*********************************************************************
-
-	m_radius = CAPSULE_RADIUS;
-	m_height = CAPSULE_HEIGHT;
-
-	m_pShape = new btCapsuleShape(m_radius, m_height);
-
-	// コライダー中心 = 足元 + オフセット
-	m_colliderPos = m_pos + D3DXVECTOR3(0, 20.0f, 0);
-
-	btTransform transform;
-	transform.setIdentity();
-	transform.setOrigin(btVector3(m_colliderPos.x, m_colliderPos.y, m_colliderPos.z));
-
-	// 質量を設定
-	btScalar mass = 2.0f;
-	btVector3 inertia(0, 0, 0);  // 慣性
-
-	m_pShape->calculateLocalInertia(mass, inertia);
-
-	btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, m_pShape, inertia);
-
-	m_pRigidBody = new btRigidBody(rbInfo);
-
-	m_pRigidBody->setAngularFactor(btVector3(0, 0, 0));
-	m_pRigidBody->setFriction(0.0f);// 摩擦
-	m_pRigidBody->setRollingFriction(0.0f);// 転がり摩擦
-
-	m_pRigidBody->setUserPointer(this);
-	m_pRigidBody->setActivationState(DISABLE_DEACTIVATION);// スリープ状態にしない
-
-	// 物理ワールドに追加
-	btDiscreteDynamicsWorld* pWorld = CManager::GetPhysicsWorld();
-
-	if (pWorld != nullptr)
-	{
-		pWorld->addRigidBody(m_pRigidBody);
-	}
+	// カプセルコライダーの設定
+	CreatePhysics(CAPSULE_RADIUS, CAPSULE_HEIGHT);
 
 	// ステンシルシャドウの生成
-	m_pShadowS = CShadowS::Create("data/MODELS/stencilshadow.x",m_pos);
+	m_pShadowS = CShadowS::Create("data/MODELS/stencilshadow.x",GetPos());
 	m_pShadowS->SetStencilRef(1);// 個別のステンシルバッファの参照値を設定
 
 	// インスタンスのポインタを渡す
@@ -211,7 +163,7 @@ void CPlayer::Update(void)
 	D3DXVECTOR3 CamRot = pCamera->GetRot();
 
 	// 接地判定
-	m_bOnGround = OnGround(CManager::GetPhysicsWorld(), m_pRigidBody, 55.0f);
+	m_bOnGround = OnGround(CManager::GetPhysicsWorld(), GetRigidBody(), 55.0f);
 
 	// ステートマシン更新
 	m_stateMachine.Update();
@@ -219,30 +171,24 @@ void CPlayer::Update(void)
 	// 入力判定の取得
 	InputData input = GatherInput();
 
-	// 向きの正規化
-	if (m_rotDest.y - m_rot.y > D3DX_PI)
-	{
-		m_rot.y += D3DX_PI * 2.0f;
-	}
-	else if (m_rotDest.y - m_rot.y < -D3DX_PI)
-	{
-		m_rot.y -= D3DX_PI * 2.0f;
-	}
-
-	m_rot.y += (m_rotDest.y - m_rot.y) * 0.09f;
+	// 向きの更新処理
+	UpdateRotation(0.09f);
 
 	// 移動入力があればプレイヤー向きを入力方向に
 	if (!m_pMotion->IsAttacking() && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f))
 	{
-		m_rotDest.y = atan2f(-input.moveDir.x,-input.moveDir.z);
+		// Y成分だけを使いたいので目標の向きを取得
+		D3DXVECTOR3 rotDest = GetRotDest();
+
+		// Yを入力方向に向ける
+		rotDest.y = atan2f(-input.moveDir.x, -input.moveDir.z);
+
+		// 目標の向きに設定する
+		SetRotDest(rotDest);
 	}
 
-	// 現在位置を物理ワールドから取得して m_pos に反映
-	btTransform trans;
-	m_pRigidBody->getMotionState()->getWorldTransform(trans);
-	btVector3 pos = trans.getOrigin();
-	m_colliderPos = D3DXVECTOR3(pos.getX(), pos.getY(), pos.getZ());
-	m_pos = m_colliderPos - D3DXVECTOR3(0, 35.0f, 0); // 足元へのオフセット
+	// コライダーの位置更新(オフセットを設定)
+	UpdateCollider(D3DXVECTOR3(0, 35.0f, 0));// 足元に合わせる
 
 	CModelEffect* pModelEffect = nullptr;
 
@@ -271,7 +217,7 @@ void CPlayer::Update(void)
 			rot.z = ((rand() % 360) / 180.0f) * D3DX_PI;
 
 			// モデルエフェクトの生成
-			pModelEffect = CModelEffect::Create("data/MODELS/effectModel_step.x", m_pos, rot,
+			pModelEffect = CModelEffect::Create("data/MODELS/effectModel_step.x", GetPos(), rot,
 				move, D3DXVECTOR3(0.3f, 0.3f, 0.3f), 180, 0.01f, 0.008f);
 		}
 	}
@@ -283,7 +229,7 @@ void CPlayer::Update(void)
 	if (m_pShadowS != nullptr)
 	{
 		// ステンシルシャドウの位置設定
-		m_pShadowS->SetPosition(m_pos);
+		m_pShadowS->SetPosition(GetPos());
 	}
 
 	int nNumModels = 16;
@@ -306,15 +252,15 @@ void CPlayer::Draw(void)
 	D3DXMatrixIdentity(&m_mtxWorld);
 
 	// サイズを反映
-	D3DXMatrixScaling(&mtxSize, m_size.x, m_size.y, m_size.z);
+	D3DXMatrixScaling(&mtxSize, GetSize().x, GetSize().y, GetSize().z);
 	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxSize);
 
 	// 向きを反映
-	D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);
+	D3DXMatrixRotationYawPitchRoll(&mtxRot, GetRot().y, GetRot().x, GetRot().z);
 	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxRot);
 
 	// 位置を反映
-	D3DXMatrixTranslation(&mtxTrans, m_pos.x, m_pos.y, m_pos.z);
+	D3DXMatrixTranslation(&mtxTrans, GetPos().x, GetPos().y, GetPos().z);
 	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxTrans);
 
 	// ワールドマトリックスを設定
@@ -331,13 +277,16 @@ void CPlayer::Draw(void)
 
 #ifdef _DEBUG
 
+	btRigidBody* pRigid = GetRigidBody();
+	btCollisionShape* pShape = GetCollisionShape();
+
 	// カプセルコライダーの描画
-	if (m_pRigidBody && m_pShape)
+	if (pRigid && pShape)
 	{
 		btTransform transform;
-		m_pRigidBody->getMotionState()->getWorldTransform(transform);
+		pRigid->getMotionState()->getWorldTransform(transform);
 
-		m_pDebug3D->DrawCapsuleCollider((btCapsuleShape*)m_pShape, transform, D3DXCOLOR(1, 1, 1, 1));
+		m_pDebug3D->DrawCapsuleCollider((btCapsuleShape*)pShape, transform, D3DXCOLOR(1, 1, 1, 1));
 	}
 
 #endif
@@ -391,32 +340,12 @@ bool CPlayer::OnGround(btDiscreteDynamicsWorld* world, btRigidBody* playerBody, 
 	return false;
 }
 //=============================================================================
-// Physicsの破棄
-//=============================================================================
-void CPlayer::ReleasePhysics(void)
-{
-	if (m_pRigidBody)
-	{
-		btDiscreteDynamicsWorld* pWorld = CManager::GetPhysicsWorld();
-		if (pWorld) pWorld->removeRigidBody(m_pRigidBody);
-		delete m_pRigidBody->getMotionState();
-		delete m_pRigidBody;
-		m_pRigidBody = nullptr;
-	}
-
-	if (m_pShape)
-	{
-		delete m_pShape;
-		m_pShape = nullptr;
-	}
-}
-//=============================================================================
 // プレイヤーの前方ベクトル取得
 //=============================================================================
-D3DXVECTOR3 CPlayer::GetForward(void) const
+D3DXVECTOR3 CPlayer::GetForward(void)
 {
 	// プレイヤーの回転角度（Y軸）から前方ベクトルを計算
-	float yaw = m_rot.y;
+	float yaw = GetRot().y;
 
 	D3DXVECTOR3 forward(-sinf(yaw), 0.0f, -cosf(yaw));
 
