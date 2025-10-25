@@ -281,6 +281,57 @@ void CObject2D::ScrollTexture(void)
 	m_pVtxBuff->Unlock();
 }
 //=============================================================================
+// ゲージの頂点座標更新処理
+//=============================================================================
+void CObject2D::UpdateGuageVtx(float fRate)
+{
+	VERTEX_2D* pVtx;// 頂点情報へのポインタ
+
+	// 頂点バッファをロックし、頂点情報へのポインタを取得
+	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
+
+	float currentWidth = m_fWidth * fRate; // rate: 0.0f～1.0f（ゲージ割合）
+
+	pVtx[0].pos = D3DXVECTOR3(m_pos.x, m_pos.y - m_fHeight, 0.0f);
+	pVtx[1].pos = D3DXVECTOR3(m_pos.x + currentWidth, m_pos.y - m_fHeight, 0.0f);
+	pVtx[2].pos = D3DXVECTOR3(m_pos.x, m_pos.y + m_fHeight, 0.0f);
+	pVtx[3].pos = D3DXVECTOR3(m_pos.x + currentWidth, m_pos.y + m_fHeight, 0.0f);
+
+	pVtx[0].col = m_col;
+	pVtx[1].col = m_col;
+	pVtx[2].col = m_col;
+	pVtx[3].col = m_col;
+
+	// 頂点バッファをアンロックする
+	m_pVtxBuff->Unlock();
+}
+//=============================================================================
+// フレームの頂点座標更新処理
+//=============================================================================
+void CObject2D::UpdateFrame(void)
+{
+	VERTEX_2D* pVtx;// 頂点情報へのポインタ
+
+	// 頂点バッファをロックし、頂点情報へのポインタを取得
+	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
+
+	// フレームのサイズオフセット
+	float offset = 4.0f;
+
+	pVtx[0].pos = D3DXVECTOR3(m_pos.x - offset, m_pos.y - m_fHeight - offset, 0.0f);
+	pVtx[1].pos = D3DXVECTOR3(m_pos.x + m_fWidth + offset, m_pos.y - m_fHeight - offset, 0.0f);
+	pVtx[2].pos = D3DXVECTOR3(m_pos.x - offset, m_pos.y + m_fHeight + offset, 0.0f);
+	pVtx[3].pos = D3DXVECTOR3(m_pos.x + m_fWidth + offset, m_pos.y + m_fHeight + offset, 0.0f);
+
+	pVtx[0].col = m_col;
+	pVtx[1].col = m_col;
+	pVtx[2].col = m_col;
+	pVtx[3].col = m_col;
+
+	// 頂点バッファをアンロックする
+	m_pVtxBuff->Unlock();
+}
+//=============================================================================
 // サイズ設定
 //=============================================================================
 void CObject2D::SetSize(float fWidth, float fHeight)

@@ -17,6 +17,7 @@
 #include "pausemanager.h"
 #include "imguimaneger.h"
 #include "grid.h"
+#include "enemy.h"
 
 //*****************************************************************************
 // ゲームクラス
@@ -33,6 +34,7 @@ public:
 	void Draw(void);
 
 	static CPlayer* GetPlayer(void) { return m_pPlayer; }
+	static CEnemy* GetEnemy(void) { return m_pEnemy; }
 	static CTime* GetTime(void) { return m_pTime; }
 	static CBlock* GetBlock(void) { return m_pBlock; }
 	static CBlockManager* GetBlockManager(void) { return m_pBlockManager; }
@@ -44,6 +46,7 @@ public:
 
 private:
 	static CPlayer* m_pPlayer;					// プレイヤーへのポインタ
+	static CEnemy* m_pEnemy;					// 敵へのポインタ
 	static CTime* m_pTime;						// タイムへのポインタ
 	static CColon* m_pColon;					// コロンへのポインタ
 	static CBlock* m_pBlock;					// ブロックへのポインタ

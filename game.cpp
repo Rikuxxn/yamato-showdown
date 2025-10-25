@@ -16,7 +16,8 @@
 //*****************************************************************************
 // 静的メンバ変数宣言
 //*****************************************************************************
-CPlayer* CGame::m_pPlayer = nullptr;
+CPlayer* CGame::m_pPlayer = nullptr;				// プレイヤーへのポインタ
+CEnemy* CGame::m_pEnemy = nullptr;					// 敵へのポインタ
 CTime* CGame::m_pTime = nullptr;					// タイムへのポインタ
 CColon* CGame::m_pColon = nullptr;					// コロンへのポインタ
 CBlock* CGame::m_pBlock= nullptr;					// ブロックへのポインタ
@@ -59,9 +60,16 @@ HRESULT CGame::Init(void)
 	// ブロックマネージャーの初期化
 	m_pBlockManager->Init();
 
+	CCharacterManager characterManager;
+
 	// プレイヤーの生成
 	m_pPlayer = CPlayer::Create(D3DXVECTOR3(0.0f, 100.0f, -300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	//m_pPlayer = CPlayer::Create(D3DXVECTOR3(-660.0f, 100.0f, -3898.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	characterManager.AddCharacter(m_pPlayer);
+
+	// 敵の生成
+	m_pEnemy = CEnemy::Create(D3DXVECTOR3(0.0f, 200.0f, 300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	characterManager.AddCharacter(m_pEnemy);
 
 	m_nSeed = (int)time(nullptr);  // シード値をランダム設定
 

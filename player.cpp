@@ -13,6 +13,7 @@
 #include "model.h"
 #include "particle.h"
 #include "game.h"
+#include "guage.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -20,7 +21,7 @@ using namespace std;
 //=============================================================================
 // コンストラクタ
 //=============================================================================
-CPlayer::CPlayer(int nPriority) : CObject(nPriority)
+CPlayer::CPlayer()
 {
 	// 値のクリア
 	memset(m_apModel, 0, sizeof(m_apModel));			// モデル(パーツ)へのポインタ
@@ -28,8 +29,6 @@ CPlayer::CPlayer(int nPriority) : CObject(nPriority)
 	m_rot				= INIT_VEC3;					// 向き
 	m_rotDest			= INIT_VEC3;					// 向き
 	m_move				= INIT_VEC3;					// 移動量
-	m_targetMove		= INIT_VEC3;					// 目標速度
-	m_currentMove		= INIT_VEC3;					// 実際の移動速度
 	m_size				= D3DXVECTOR3(1.0f, 1.0f, 1.0f);// サイズ
 	m_mtxWorld			= {};							// ワールドマトリックス
 	m_nNumModel			= 0;							// モデル(パーツ)の総数
@@ -44,9 +43,7 @@ CPlayer::CPlayer(int nPriority) : CObject(nPriority)
 	m_radius			= 0.0f;							// カプセルコライダーの半径
 	m_height			= 0.0f;							// カプセルコライダーの高さ
 	m_colliderPos		= INIT_VEC3;					// コライダーの位置
-	m_pCarryingBlock	= nullptr;						// 運んでいるブロック
 	m_particleTimer		= 0;							// パーティクルタイマー
-
 }
 //=============================================================================
 // デストラクタ
@@ -143,12 +140,19 @@ HRESULT CPlayer::Init(void)
 
 	// ステンシルシャドウの生成
 	m_pShadowS = CShadowS::Create("data/MODELS/stencilshadow.x",m_pos);
+	m_pShadowS->SetStencilRef(1);// 個別のステンシルバッファの参照値を設定
 
 	// インスタンスのポインタを渡す
 	m_stateMachine.Start(this);
 
 	// 初期状態のステートをセット
 	m_stateMachine.ChangeState<CPlayer_StandState>();
+
+	// HPの設定
+	SetHp(10.0f);
+
+	// ゲージを生成
+	SetGuages(D3DXVECTOR3(100.0f, 800.0f, 0.0f), 420.0f, 20.0f);
 
 	return S_OK;
 }
@@ -183,6 +187,23 @@ void CPlayer::Uninit(void)
 //=============================================================================
 void CPlayer::Update(void)
 {
+
+#ifdef _DEBUG
+	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
+
+	if (pKeyboard->GetTrigger(DIK_1))
+	{
+		// ダメージ処理
+		Damage(1.0f);
+	}
+	else if (pKeyboard->GetTrigger(DIK_2))
+	{
+		// 回復処理
+		Heal(1.0f);
+	}
+
+#endif
+
 	// カメラの取得
 	CCamera* pCamera = CManager::GetCamera();
 

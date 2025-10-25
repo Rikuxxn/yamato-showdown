@@ -201,6 +201,11 @@ void CRenderer::Update(void)
 
 	ImGui::Dummy(ImVec2(0.0f, 10.0f)); // 空白を空ける
 
+	// 敵のデバッグ情報の表示処理
+	CGuiInfo::EnemyInfo();
+
+	ImGui::Dummy(ImVec2(0.0f, 10.0f)); // 空白を空ける
+
 	// カメラのデバッグ情報の表示処理
 	CGuiInfo::CameraInfo();
 

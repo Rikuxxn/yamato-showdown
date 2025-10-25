@@ -44,6 +44,8 @@ public:
 	void MoveTexUV(float fLeft, float fTop, float fWidth, float fHeight);
 	void TextureAnim(int nTexPosX, int nTexPosY, int nAnimSpeed);
 	void ScrollTexture(void);
+	void UpdateGuageVtx(float fRate);// HPゲージで使う頂点座標更新
+	void UpdateFrame(void);				// HPゲージのフレームの頂点座標更新
 
 private:
 	LPDIRECT3DVERTEXBUFFER9 m_pVtxBuff;		// 頂点バッファへのポインタ

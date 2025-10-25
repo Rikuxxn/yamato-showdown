@@ -164,6 +164,7 @@
     <ClCompile Include="blocklist.cpp" />
     <ClCompile Include="blockmanager.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="charactermanager.cpp" />
     <ClCompile Include="collisionUtils.cpp" />
     <ClCompile Include="debugproc.cpp" />
     <ClCompile Include="debugproc3D.cpp" />
@@ -174,6 +175,7 @@
     <ClCompile Include="game.cpp" />
     <ClCompile Include="grass.cpp" />
     <ClCompile Include="grid.cpp" />
+    <ClCompile Include="guage.cpp" />
     <ClCompile Include="guiInfo.cpp" />
     <ClCompile Include="imgui.cpp" />
     <ClCompile Include="imguimaneger.cpp" />
@@ -225,6 +227,7 @@
     <ClInclude Include="blocklist.h" />
     <ClInclude Include="blockmanager.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="charactermanager.h" />
     <ClInclude Include="collisionUtils.h" />
     <ClInclude Include="debugproc.h" />
     <ClInclude Include="debugproc3D.h" />
@@ -236,6 +239,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="grass.h" />
     <ClInclude Include="grid.h" />
+    <ClInclude Include="guage.h" />
     <ClInclude Include="guiInfo.h" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui.h" />

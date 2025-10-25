@@ -18,20 +18,12 @@
 #include "effect.h"
 #include "state.h"
 #include "manager.h"
+#include "charactermanager.h"
 
 // 前方宣言
 class CPlayer_StandState;
 class CPlayer_MoveState;
 class CPlayer_AttackState1;
-
-//*****************************************************************************
-// マクロ定義
-//*****************************************************************************
-#define MAX_PARTS		(32)					// 最大パーツ数
-#define PLAYER_SPEED	(200.0f)				// 移動スピード
-#define MAX_GRAVITY		(-0.26f)				// 重力加速度
-#define CAPSULE_RADIUS (10.5f)					// カプセルコライダーの半径
-#define CAPSULE_HEIGHT (45.5f)					// カプセルコライダーの高さ
 
 // 入力データ構造体
 struct InputData
@@ -43,11 +35,13 @@ struct InputData
 //*****************************************************************************
 // プレイヤークラス
 //*****************************************************************************
-class CPlayer : public CObject
+class CPlayer : public CCharacter
 {
 public:
-	CPlayer(int nPriority = 2);
+	CPlayer();
 	~CPlayer();
+
+	static constexpr float PLAYER_SPEED = 200.0f;				// 移動スピード
 
 	// プレイヤーモーションの種類
 	typedef enum
@@ -92,7 +86,6 @@ public:
 	D3DXVECTOR3 GetForward(void) const;
 	InputData GatherInput(void);
 	CBlock* FindFrontBlockByRaycast(float rayLength);
-
 	void ReleasePhysics(void);														// Physics破棄用
 
 	// ステート用にフラグ更新
@@ -102,6 +95,11 @@ public:
 	}
 
 private:
+	static constexpr int MAX_PARTS = 32;	// 最大パーツ数
+	static constexpr float MAX_GRAVITY = -0.26f;		// 重力加速度
+	static constexpr float CAPSULE_RADIUS = 10.5f;					// カプセルコライダーの半径
+	static constexpr float CAPSULE_HEIGHT = 45.5f;					// カプセルコライダーの高さ
+
 	D3DXVECTOR3 m_pos;					// 位置
 	D3DXVECTOR3 m_rot;					// 向き
 	D3DXVECTOR3 m_rotDest;				// 向き
@@ -223,14 +221,14 @@ public:
 		}
 
 		// 目標速度計算
-		float moveSpeed = PLAYER_SPEED;
+		float moveSpeed = CPlayer::PLAYER_SPEED;
 
 		D3DXVECTOR3 targetMove = input.moveDir;
 
 		if (targetMove.x != 0.0f || targetMove.z != 0.0f)
 		{
 			D3DXVec3Normalize(&targetMove, &targetMove);
-			moveSpeed = PLAYER_SPEED;
+			moveSpeed = CPlayer::PLAYER_SPEED;
 
 			targetMove *= moveSpeed;
 		}

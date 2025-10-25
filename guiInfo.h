@@ -21,6 +21,9 @@ public:
 	// プレイヤーのデバッグ情報の表示
 	static void PlayerInfo(void);
 
+	// 敵のデバッグ情報の表示
+	static void EnemyInfo(void);
+
 	// カメラのデバッグ情報の表示
 	static void CameraInfo(void);
 };

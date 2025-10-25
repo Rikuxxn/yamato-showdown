@@ -159,7 +159,7 @@ void CShadowS::Draw(void)
 	CObjectX::Draw();
 
 	// ステンシルバッファの参照値を設定(1にする)
-	pDevice->SetRenderState(D3DRS_STENCILREF, 0x01);
+	pDevice->SetRenderState(D3DRS_STENCILREF, m_stencilRef);
 
 	// ステンシルバッファの比較パラメータを設定
 	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
@@ -177,11 +177,11 @@ void CShadowS::Draw(void)
 	pDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0x0000000F);
 
 	// ステンシルバッファの参照値を設定(2にする)
-	pDevice->SetRenderState(D3DRS_STENCILREF, 0x02);
+	pDevice->SetRenderState(D3DRS_STENCILREF, m_stencilRef + 1);
 
 	// ステンシルバッファの比較パラメータを設定
 	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
-	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_INCRSAT);	// ステンシルテスト : 合格 / Zテスト : 合格
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);	// ステンシルテスト : 合格 / Zテスト : 合格
 	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_INCRSAT);	// ステンシルテスト : 合格 / Zテスト : 不合格
 	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_INCRSAT);	// ステンシルテスト : 不合格
 
