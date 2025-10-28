@@ -46,7 +46,8 @@ public:
 	D3DXVECTOR3 GetRot(void) { return m_rot; }
 	D3DXVECTOR3 GetOffsetPos(void) const { return m_OffsetPos; }
 	D3DXVECTOR3 GetOffsetRot(void) const { return m_OffsetRot; }
-
+	const char* GetPath(void) { return m_Path; }
+	CModel* GetParent(void) { return m_pParent; }
 
 private:
 	int* m_nIdxTexture;

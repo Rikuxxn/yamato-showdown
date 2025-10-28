@@ -41,7 +41,6 @@ public:
 	static CSound* GetSound(void) { return m_pSound; }
 	static CTexture* GetTexture(void) { return m_pTexture; }
 	static CCamera* GetCamera(void) { return m_pCamera; }
-	static CLight* GetLight(void) { return m_pLight; }
 	static CFade* GetFade(void) { return m_pFade; }
 	static btDiscreteDynamicsWorld* GetPhysicsWorld(void) { return m_pDynamicsWorld.get(); }
 	int GetFPS(int fps) { return m_fps = fps; };
@@ -49,6 +48,7 @@ public:
 
 	static void SetMode(CScene::MODE mode);
 	static CScene::MODE GetMode(void);
+	static void OnDeviceReset(void);
 
 private:
 	static CRenderer* m_pRenderer;				// レンダラーへのポインタ
@@ -58,7 +58,6 @@ private:
 	static CSound* m_pSound;					// サウンドへのポインタ
 	static CTexture* m_pTexture;				// テクスチャへのポインタ
 	static CCamera* m_pCamera;					// カメラへのポインタ
-	static CLight* m_pLight;					// ライトへのポインタ
 	int m_fps;									// FPS値
 
 	std::unique_ptr<btBroadphaseInterface> m_pBroadphase;						// 衝突判定のクラスへのポインタ

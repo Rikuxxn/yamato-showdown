@@ -160,3 +160,42 @@ void CLight::DeleteLight(int index)
         m_lightCount--;
     }
 }
+//=============================================================================
+// 現在のライトを取得する処理
+//=============================================================================
+std::vector<CLight::LightInfo> CLight::GetCurrentLights(void)
+{
+    std::vector<LightInfo> backup;
+
+    for (int i = 0; i < m_lightCount; i++)
+    {
+        if (m_lights[i].enabled)
+        {
+            LightInfo b;
+            b.light = m_lights[i].light;
+            b.direction = m_lights[i].direction;
+            b.position = m_lights[i].position;
+            b.enabled = m_lights[i].enabled;
+            backup.push_back(b);
+        }
+    }
+    return backup;
+}
+//=============================================================================
+// 一時的にライトを退避する処理
+//=============================================================================
+void CLight::RestoreLights(const std::vector<LightInfo>& backup)
+{
+    Uninit(); // 一度全部削除してから
+
+    for (const auto& b : backup)
+    {
+        int index = AddLight(b.light.Type,
+            D3DXCOLOR(b.light.Diffuse),
+            b.direction,
+            b.position);
+        // 元のD3DLIGHT9構造体を上書きして完全復元
+        m_lights[index].light = b.light;
+        m_lights[index].enabled = b.enabled;
+    }
+}

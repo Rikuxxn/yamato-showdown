@@ -11,6 +11,7 @@
 #include "objectX.h"
 #include "renderer.h"
 #include "manager.h"
+#include "player.h"
 
 // –¼‘O‹óŠÔstd‚Ìg—p
 using namespace std;
@@ -189,7 +190,7 @@ void CObjectX::Uninit(void)
 void CObjectX::Update(void)
 {
 
-	
+
 }
 //=============================================================================
 // •`‰æˆ—

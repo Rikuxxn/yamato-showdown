@@ -11,6 +11,7 @@
 #include "guage.h"
 #include "manager.h"
 #include "game.h"
+#include "charactermanager.h"
 
 //=============================================================================
 // コンストラクタ

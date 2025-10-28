@@ -28,7 +28,6 @@ std::vector<CBlock*> CBlockManager::m_blocks = {};	// ブロックの情報
 int CBlockManager::m_selectedIdx = 0;				// 選択中のインデックス
 CBlock* CBlockManager::m_draggingBlock = {};		// ドラッグ中のブロック
 std::unordered_map<CBlock::TYPE, std::string> CBlockManager::s_FilePathMap; 
-std::unordered_map<CBlock::TYPE, std::string> CBlockManager::s_texFilePathMap;
 CBlock* CBlockManager::m_selectedBlock = {};// 選択したブロック
 
 //=============================================================================
@@ -42,7 +41,6 @@ CBlockManager::CBlockManager()
 	m_hasConsumedPayload		= false;
 	m_pDebug3D					= nullptr;// 3Dデバッグ表示へのポインタ
 	m_autoUpdateColliderSize	= true;
-	m_texIDs					= {};
 	m_isDragging				= false;// ドラッグ中かどうか
 }
 //=============================================================================
@@ -73,34 +71,217 @@ CBlock* CBlockManager::CreateBlock(CBlock::TYPE type, D3DXVECTOR3 pos)
 //=============================================================================
 void CBlockManager::Init(void)
 {
+	// デバイスの取得
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
+
+	InitThumbnailRenderTarget(pDevice);
+
 	LoadConfig("data/block_payload.json");
 
-	m_texIDs.resize(CBlock::TYPE_MAX);
-
-	// GUIテクスチャの登録
-	for (int typeInt = 0; typeInt < (int)CBlock::TYPE_MAX; typeInt++)
-	{
-		CBlock::TYPE type = static_cast<CBlock::TYPE>(typeInt);
-		const char* texPath = CBlockManager::GetTexPathFromType(type);
-
-		if (texPath)
-		{
-			m_texIDs[typeInt] = CManager::GetTexture()->RegisterDynamic(texPath);
-		}
-		else
-		{
-			m_texIDs[typeInt] = -1; // 無効扱い
-		}
-	}
+	// サムネイルキャッシュ作成
+	GenerateThumbnailsForResources();
 
 	// 動的配列を空にする (サイズを0にする)
 	m_blocks.clear();
+}
+//=============================================================================
+// サムネイルのレンダーターゲットの初期化
+//=============================================================================
+HRESULT CBlockManager::InitThumbnailRenderTarget(LPDIRECT3DDEVICE9 device)
+{
+	if (!device)
+	{
+		return E_FAIL;
+	}
+
+	// サムネイル用レンダーターゲットテクスチャの作成
+	if (FAILED(device->CreateTexture(
+		(UINT)m_thumbWidth, (UINT)m_thumbHeight,
+		1, D3DUSAGE_RENDERTARGET,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_DEFAULT,
+		&m_pThumbnailRT, nullptr)))
+	{
+		return E_FAIL;
+	}
+
+	// サムネイル用深度ステンシルサーフェスの作成
+	if (FAILED(device->CreateDepthStencilSurface(
+		(UINT)m_thumbWidth, (UINT)m_thumbHeight,
+		D3DFMT_D24S8,
+		D3DMULTISAMPLE_NONE, 0, TRUE,
+		&m_pThumbnailZ, nullptr)))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+//=============================================================================
+// サムネイルのレンダーターゲットの設定
+//=============================================================================
+IDirect3DTexture9* CBlockManager::RenderThumbnail(CBlock* pBlock)
+{
+	if (!pBlock || !m_pThumbnailRT || !m_pThumbnailZ)
+	{
+		return nullptr;
+	}
+
+	// デバイスの取得
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
+
+	if (!pDevice)
+	{
+		return nullptr;
+	}
+
+	// サムネイル描画用の新規テクスチャ作成
+	IDirect3DTexture9* pTex = nullptr;
+	if (FAILED(pDevice->CreateTexture(
+		(UINT)m_thumbWidth, (UINT)m_thumbHeight, 1,
+		D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,
+		D3DPOOL_DEFAULT, &pTex, nullptr)))
+	{
+		return nullptr;
+	}
+
+	// 現在のレンダーターゲットと深度バッファを保存
+	LPDIRECT3DSURFACE9 pOldRT = nullptr;
+	LPDIRECT3DSURFACE9 pOldZ = nullptr;
+	LPDIRECT3DSURFACE9 pNewRT = nullptr;
+
+	pDevice->GetRenderTarget(0, &pOldRT);
+	pDevice->GetDepthStencilSurface(&pOldZ);
+	pTex->GetSurfaceLevel(0, &pNewRT);
+
+	// サムネイル用のレンダーターゲットに切り替え
+	pDevice->SetRenderTarget(0, pNewRT);
+	pDevice->SetDepthStencilSurface(m_pThumbnailZ);
+
+	// クリア
+	pDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(50, 50, 50), 1.0f, 0);
+	pDevice->BeginScene();
+
+	// 固定カメラ
+	D3DXVECTOR3 eye(-120.0f, 100.0f, -120.0f), at(0.0f, 0.0f, 0.0f), up(0.0f, 1.0f, 0.0f);
+	D3DXMATRIX matView, matProj;
+	D3DXMatrixLookAtLH(&matView, &eye, &at, &up);
+
+	// プロジェクションマトリックスの作成
+	D3DXMatrixPerspectiveFovLH(&matProj,
+		D3DXToRadian(60.0f),						// 視野角
+		m_thumbWidth / m_thumbHeight, // アスペクト比
+		1.0f,										// 近クリップ面
+		1000.0f);									// 遠クリップ面
+
+	pDevice->SetTransform(D3DTS_VIEW, &matView);
+	pDevice->SetTransform(D3DTS_PROJECTION, &matProj);
+
+	// --- ライトのバックアップ ---
+	auto backup = CLight::GetCurrentLights();
+
+	// 既存のライトを無効化
+	CLight::Uninit();
+
+	// ライトの初期設定処理
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.9f, 0.9f, 0.9f, 1.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR3(0.0f, 300.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.3f, 0.3f, 0.3f, 1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, -1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+
+	// サムネイル用モデル描画
+	pBlock->Draw();
+
+	// --- 元のライトを復元 ---
+	CLight::RestoreLights(backup);
+
+	// 描画終了
+	pDevice->EndScene();
+
+	// 元のレンダーターゲットと深度バッファに戻す
+	pDevice->SetRenderTarget(0, pOldRT);
+	pDevice->SetDepthStencilSurface(pOldZ);
+
+	if (pOldRT) pOldRT->Release();
+	if (pOldZ)  pOldZ->Release();
+	if (pNewRT) pNewRT->Release();
+
+	return pTex;
+}
+//=============================================================================
+// サムネイル用のモデル生成処理
+//=============================================================================
+void CBlockManager::GenerateThumbnailsForResources(void)
+{
+	// 既存サムネイルを解放
+	for (auto tex : m_thumbnailTextures)
+	{
+		if (tex)
+		{
+			tex->Release();
+		}
+	}
+
+	m_thumbnailTextures.clear();
+	m_thumbnailTextures.resize((size_t)CBlock::TYPE_MAX, nullptr);
+
+	for (size_t i = 0; i < (int)CBlock::TYPE_MAX; ++i)
+	{
+		// 一時ブロック生成（位置は原点）
+		CBlock::TYPE payloadType = static_cast<CBlock::TYPE>(i);
+		CBlock* pTemp = CreateBlock(payloadType, D3DXVECTOR3(0, 0, 0));
+		if (!pTemp)
+		{
+			continue;
+		}
+
+		// サムネイル作成
+		m_thumbnailTextures[i] = RenderThumbnail(pTemp);
+
+		pTemp->Kill();                 // 削除フラグを立てる
+		CleanupDeadBlocks();           // 配列から取り除き、メモリ解放
+	}
+}
+//=============================================================================
+// サムネイルの破棄
+//=============================================================================
+void CBlockManager::ReleaseThumbnailRenderTarget(void)
+{
+	// レンダーターゲットの破棄
+	if (m_pThumbnailRT)
+	{
+		m_pThumbnailRT->Release();
+		m_pThumbnailRT = nullptr;
+	}
+
+	if (m_pThumbnailZ)
+	{
+		m_pThumbnailZ->Release();
+		m_pThumbnailZ = nullptr;
+	}
+
+	// サムネイルキャッシュも解放しておく
+	for (auto& tex : m_thumbnailTextures)
+	{
+		if (tex)
+		{
+			tex->Release();
+			tex = nullptr;
+		}
+	}
+	m_thumbnailTextures.clear();
+	m_thumbnailsGenerated = false;
 }
 //=============================================================================
 // 終了処理
 //=============================================================================
 void CBlockManager::Uninit(void)
 {
+	// サムネイルの破棄
+	ReleaseThumbnailRenderTarget();
+
 	// 動的配列を空にする (サイズを0にする)
 	m_blocks.clear();
 }
@@ -221,26 +402,19 @@ void CBlockManager::UpdateInfo(void)
 	{
 		ImGui::BeginChild("BlockTypeList", ImVec2(0, 500), true); // スクロール領域
 
-		const float imageSize = 100.0f; // 大きめ画像
 		int numTypes = (int)CBlock::TYPE_MAX;
 
 		for (int i = 0; i < numTypes; i++)
 		{
-			if (i >= static_cast<int>(m_texIDs.size()))
-			{
-				continue;
-			}
+			IDirect3DTexture9* pThumb = GetThumbnailTexture(i); // サムネイル取得
 
-			int texIdx = m_texIDs[i];
-			LPDIRECT3DTEXTURE9 tex = CManager::GetTexture()->GetAddress(texIdx);
-
-			if (!tex)
+			if (!pThumb)
 			{
 				continue; // nullptr はスキップ
 			}
 
 			ImGui::PushID(i);
-			ImGui::Image(reinterpret_cast<ImTextureID>(tex), ImVec2(imageSize, imageSize));
+			ImGui::Image(reinterpret_cast<ImTextureID>(pThumb), ImVec2(m_thumbWidth, m_thumbHeight));
 
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 			{
@@ -248,7 +422,7 @@ void CBlockManager::UpdateInfo(void)
 				CBlock::TYPE payloadType = static_cast<CBlock::TYPE>(i);
 				ImGui::SetDragDropPayload("BLOCK_TYPE", &payloadType, sizeof(payloadType));
 				ImGui::Text("Block Type %d", i);
-				ImGui::Image(reinterpret_cast<ImTextureID>(tex), ImVec2(imageSize, imageSize));
+				ImGui::Image(reinterpret_cast<ImTextureID>(pThumb), ImVec2(m_thumbWidth, m_thumbHeight));
 				ImGui::EndDragDropSource();
 			}
 
@@ -719,10 +893,8 @@ void CBlockManager::LoadConfig(const std::string& filename)
 	{
 		int typeInt = block["type"];
 		std::string filepath = block["filepath"];
-		std::string texFilepath = block["GUItexFilepath"];
 
 		s_FilePathMap[(CBlock::TYPE)typeInt] = filepath;
-		s_texFilePathMap[(CBlock::TYPE)typeInt] = texFilepath;
 	}
 }
 //=============================================================================
@@ -1063,14 +1235,6 @@ const char* CBlockManager::GetFilePathFromType(CBlock::TYPE type)
 {
 	auto it = s_FilePathMap.find(type);
 	return (it != s_FilePathMap.end()) ? it->second.c_str() : "";
-}
-//=============================================================================
-// タイプからGUIテクスチャファイルパスを取得
-//=============================================================================
-const char* CBlockManager::GetTexPathFromType(CBlock::TYPE type)
-{
-	auto it = s_texFilePathMap.find(type);
-	return (it != s_texFilePathMap.end()) ? it->second.c_str() : "";
 }
 //=============================================================================
 // ブロック情報の保存処理

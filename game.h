@@ -11,13 +11,20 @@
 // インクルードファイル
 //*****************************************************************************
 #include "scene.h"
-#include "player.h"
-#include "time.h"
-#include "blockmanager.h"
-#include "pausemanager.h"
 #include "imguimaneger.h"
 #include "grid.h"
-#include "enemy.h"
+#include "light.h"
+#include "blockmanager.h"
+#include "pausemanager.h"
+#include "objectBillboard.h"
+#include "block.h"
+#include "rankingmanager.h"
+
+// --- 前方宣言 ---
+class CPlayer;
+class CEnemy;
+class CTime;
+class CColon;
 
 //*****************************************************************************
 // ゲームクラス
@@ -32,6 +39,8 @@ public:
 	void Uninit(void);
 	void Update(void);
 	void Draw(void);
+	static void ResetLight(void);
+	void OnDeviceReset(void) override;
 
 	static CPlayer* GetPlayer(void) { return m_pPlayer; }
 	static CEnemy* GetEnemy(void) { return m_pEnemy; }
@@ -48,7 +57,6 @@ private:
 	static CPlayer* m_pPlayer;					// プレイヤーへのポインタ
 	static CEnemy* m_pEnemy;					// 敵へのポインタ
 	static CTime* m_pTime;						// タイムへのポインタ
-	static CColon* m_pColon;					// コロンへのポインタ
 	static CBlock* m_pBlock;					// ブロックへのポインタ
 	static CBlockManager* m_pBlockManager;		// ブロックマネージャーへのポインタ
 	static CObjectBillboard* m_pBillboard;		// ビルボードへのポインタ
@@ -56,7 +64,8 @@ private:
 	std::unique_ptr<CGrid> m_pGrid;				// グリッドへのポインタ
 	static bool m_isPaused;						// trueならポーズ中
 	static int m_nSeed;							// マップのシード値
-
+	std::unique_ptr<CRankingManager> m_pRankingManager;			// ランキングへのポインタ
+	CLight* m_pLight;
 };
 
 #endif

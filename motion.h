@@ -32,6 +32,7 @@ public:
 	bool IsCurrentMotionEnd(int motionType) const;
 	int GetMotionType(void) { return m_motionType; }
 
+	bool IsAttacking(int motionType, int keyIndex, int startFrame, int endFrame) const;
 	bool IsAttacking(void) const;
 
 private:
@@ -126,7 +127,6 @@ private:
 	int m_nCounterMotionBlend;					// ブレンドモーションのカウンター
 	int m_nFrameBlend;							// ブレンドのフレーム数(何フレームかけてブレンドするか)
 	int m_nCounterBlend;						// ブレンドカウンター
-
 };
 
 #endif

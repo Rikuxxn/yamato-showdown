@@ -17,8 +17,9 @@
 #include "shadowS.h"
 #include "effect.h"
 #include "state.h"
-#include "manager.h"
 #include "charactermanager.h"
+#include "weaponcollider.h"
+#include "game.h"
 
 // 前方宣言
 class CPlayer_StandState;
@@ -66,19 +67,20 @@ public:
 	//*****************************************************************************
 	// setter関数
 	//*****************************************************************************
-	void SetMove(D3DXVECTOR3 move) { m_move = move; }
+
 
 	//*****************************************************************************
 	// getter関数
 	//*****************************************************************************
 	CMotion* GetMotion(void) { return m_pMotion; }
-	D3DXVECTOR3 GetMove(void) const { return m_move; }
 	bool GetPlayerUse(void) const { return m_playerUse; }
 	bool GetOnGround(void) { return m_bOnGround; }
 	bool GetIsMoving(void) const { return m_bIsMoving; }
 	D3DXVECTOR3 GetForward(void);
 	InputData GatherInput(void);
 	CBlock* FindFrontBlockByRaycast(float rayLength);
+	CModel* GetWeapon(void) { return m_pSwordModel; }
+	CWeaponCollider* GetWeaponCollider(void) { return m_pWeaponCollider.get(); }
 
 	// ステート用にフラグ更新
 	void UpdateMovementFlags(const D3DXVECTOR3& moveDir)
@@ -92,7 +94,6 @@ private:
 	static constexpr float CAPSULE_RADIUS	= 10.5f;	// カプセルコライダーの半径
 	static constexpr float CAPSULE_HEIGHT	= 45.5f;	// カプセルコライダーの高さ
 
-	D3DXVECTOR3 m_move;					// 移動量
 	D3DXMATRIX m_mtxWorld;				// ワールドマトリックス
 	CModel* m_apModel[MAX_PARTS];		// モデル(パーツ)へのポインタ
 	CShadowS* m_pShadowS;				// ステンシルシャドウへのポインタ
@@ -104,6 +105,10 @@ private:
 	bool m_bOnGround;					// 接地フラグ
 	int m_particleTimer;				// パーティクルタイマー
 	static constexpr int DASH_PARTICLE_INTERVAL = 10; // パーティクル発生間隔（フレーム数）
+	CModel* m_pSwordModel; // 武器モデルのポインタ
+	CObjectX* m_pTipModel;	// 武器コライダー用モデル
+	CObjectX* m_pBaseModel;	// 武器コライダー用モデル
+	std::unique_ptr<CWeaponCollider> m_pWeaponCollider;// 武器の当たり判定へのポインタ
 
 	// ステートを管理するクラスのインスタンス
 	StateMachine<CPlayer> m_stateMachine;
@@ -121,6 +126,9 @@ public:
 	{		
 		// 待機モーション
 		pPlayer->GetMotion()->StartBlendMotion(CPlayer::NEUTRAL, 10);
+
+		// ヒットフラグをリセット
+		pPlayer->GetWeaponCollider()->ResetHit();
 	}
 
 	void OnUpdate(CPlayer* pPlayer)override
@@ -304,6 +312,23 @@ public:
 		velocity.setX(move.x);
 		velocity.setZ(move.z);
 		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+
+		if (pPlayer->GetWeapon() && pPlayer->GetWeaponCollider())
+		{
+			// 攻撃中だけ有効化
+			if (pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01, 2, 0, 5))
+			{
+				pPlayer->GetWeaponCollider()->SetActive(true);
+				pPlayer->GetWeaponCollider()->ResetPrevPos();
+			}
+			else
+			{
+				pPlayer->GetWeaponCollider()->SetActive(false);
+			}
+
+			// 敵に当たったか判定する
+			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy());
+		}
 
 		if (pPlayer->GetMotion()->IsCurrentMotionEnd(CPlayer::ATTACK_01))
 		{// 攻撃モーションが終わっていたら

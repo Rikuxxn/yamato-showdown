@@ -12,6 +12,7 @@
 //*****************************************************************************
 #include "scene.h"
 #include "blockmanager.h"
+#include "light.h"
 
 //*****************************************************************************
 // タイトルクラス
@@ -42,8 +43,11 @@ public:
 	void Uninit(void);
 	void Update(void);
 	void Draw(void);
+	static void ResetLight(void);
+	void OnDeviceReset(void) override;
 	void PressAny(void);
 	void FadeOut(void);
+	static CBlockManager* GetBlockManager(void) { return m_pBlockManager; }
 
 private:
 
@@ -71,8 +75,10 @@ private:
 	float m_alphaPress;						// 現在のアルファ値
 	bool  m_isAlphaDown;					// 点滅用フラグ（上げる/下げる）
 	bool  m_isEnterPressed;					// エンターキー押された
-	CBlockManager* m_pBlockManager;			// ブロックマネージャーへのポインタ
+	static CBlockManager* m_pBlockManager;	// ブロックマネージャーへのポインタ
 	State m_state;							// 状態
+	CLight* m_pLight;
+
 };
 
 #endif

@@ -26,6 +26,7 @@ CCharacter::CCharacter(int nPriority) : CObject(nPriority)
 	m_rot           = INIT_VEC3;					// 向き
 	m_rotDest       = INIT_VEC3;					// 向き
 	m_size          = D3DXVECTOR3(1.0f, 1.0f, 1.0f);// サイズ
+    m_move          = INIT_VEC3;					// 移動量
 	m_pRigidBody    = nullptr;						// 剛体へのポインタ
 	m_pShape        = nullptr;						// 当たり判定の形へのポインタ
 	m_radius        = 0.0f;							// カプセルコライダーの半径

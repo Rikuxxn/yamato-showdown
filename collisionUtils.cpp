@@ -375,7 +375,22 @@ bool CCollision::CheckCapsuleOBBCollision(const CCapsuleCollider* capsule, const
 
 	return distSq <= (capsule->GetRadius() * capsule->GetRadius());
 }
+//=============================================================================
+// 線分とカプセルの当たり判定
+//=============================================================================
+bool CCollision::IntersectSegmentCapsule(
+	const D3DXVECTOR3& segA,
+	const D3DXVECTOR3& segB,
+	const D3DXVECTOR3& capsuleBottom,
+	const D3DXVECTOR3& capsuleTop,
+	float radius)
+{
+	// 最短距離の2点を計算
+	D3DXVECTOR3 p1, p2;
+	float distSqr = DistanceSqSegmentSegment(segA, segB, capsuleBottom, capsuleTop, &p1, &p2);
 
+	return distSqr <= radius * radius;
+}
 
 //=============================================================================
 // 点と線分の最近接距離を返す関数
@@ -455,4 +470,112 @@ bool CCollision::OverlapOnAxis(const CBoxCollider* obb1, const CBoxCollider* obb
 	ProjectOBB(obb2, axis, min2, max2);
 
 	return !(max1 < min2 || max2 < min1);
+}
+//=============================================================================
+// 2つの線分 (p1-q1, p2-q2) 間の最短距離の二乗を計算する処理
+// outClosestPoint1, outClosestPoint2 は最近接点を返す
+//=============================================================================
+float CCollision::DistanceSqSegmentSegment(
+	const D3DXVECTOR3& p1, const D3DXVECTOR3& q1,// 線分1の端点
+	const D3DXVECTOR3& p2, const D3DXVECTOR3& q2,// 線分2の端点
+	D3DXVECTOR3* outClosestPoint1,
+	D3DXVECTOR3* outClosestPoint2)
+{
+	D3DXVECTOR3 d1 = q1 - p1;	// 線分1のベクトル
+	D3DXVECTOR3 d2 = q2 - p2;	// 線分2のベクトル
+	D3DXVECTOR3 r = p1 - p2;	// 線分1の始点と線分2の始点の差
+
+	float a = D3DXVec3Dot(&d1, &d1);	// 線分1の長さの2乗
+	float e = D3DXVec3Dot(&d2, &d2);	// 線分2の長さの2乗
+	float f = D3DXVec3Dot(&d2, &r);		// 線分2と線分1始点の差の内積
+
+	float s, t;
+
+	const float EPS = 1e-6f;// 小さい値（線分がほぼ点の場合の判定用）
+
+	// 両方の線分がほぼ点の場合
+	if (a <= EPS && e <= EPS)
+	{
+		// 両方の線分が点
+		s = t = 0.0f;
+		if (outClosestPoint1)
+		{
+			*outClosestPoint1 = p1;
+		}
+		if (outClosestPoint2)
+		{
+			*outClosestPoint2 = p2;
+		}
+
+		D3DXVECTOR3 distance = p1 - p2;
+		return D3DXVec3LengthSq(&distance);// その2点間の距離の2乗を返す
+	}
+
+	// 線分1がほぼ点の場合
+	if (a <= EPS)
+	{
+		s = 0.0f;
+		t = f / e;// 線分2上で線分1点に最も近い点のパラメータ
+		t = max(0.0f, min(1.0f, t));// 線分範囲にクランプ
+	}
+	else
+	{
+		float c = D3DXVec3Dot(&d1, &r);// 線分1と線分1始点→線分2差の内積
+
+		// 線分2がほぼ点の場合
+		if (e <= EPS)
+		{
+			t = 0.0f;
+			s = -c / a;// 線分1上で線分2点に最も近い点のパラメータ
+			s = max(0.0f, min(1.0f, s));// 線分範囲にクランプ
+		}
+		else
+		{
+			// 両方線分
+			float b = D3DXVec3Dot(&d1, &d2);// 線分間の方向ベクトルの内積
+			float denom = a * e - b * b;
+
+			if (denom != 0.0f)
+			{
+				s = (b * f - c * e) / denom;
+			}
+			else
+			{
+				s = 0.0f; // 平行な場合は0固定
+			}
+
+			s = max(0.0f, min(1.0f, s));// 線分範囲にクランプ
+
+			t = (b * s + f) / e;
+
+			// 線分2の範囲外なら再調整
+			if (t < 0.0f)
+			{
+				t = 0.0f;
+				s = max(0.0f, min(1.0f, -c / a));
+			}
+			else if (t > 1.0f)
+			{
+				t = 1.0f;
+				s = max(0.0f, min(1.0f, (b - c) / a));
+			}
+		}
+	}
+
+	// 最近接点を計算
+	D3DXVECTOR3 c1 = p1 + d1 * s;
+	D3DXVECTOR3 c2 = p2 + d2 * t;
+
+	if (outClosestPoint1)
+	{
+		*outClosestPoint1 = c1;// 線分1の最近接点
+	}
+	if (outClosestPoint2)
+	{
+		*outClosestPoint2 = c2;// 線分2の最近接点
+	}
+
+	// 最近接点間の距離の2乗を返す
+	D3DXVECTOR3 diff = c1 - c2;
+	return D3DXVec3LengthSq(&diff);
 }

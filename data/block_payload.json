@@ -1,42 +1,34 @@
 [
   {
     "type": 0,
-    "filepath": "data/MODELS/wall_01.x",
-    "GUItexFilepath": "data/TEXTURE/wall_01.png"
+    "filepath": "data/MODELS/wall_01.x"
   },
   {
     "type": 1,
-    "filepath": "data/MODELS/floor_01.x",
-    "GUItexFilepath": "data/TEXTURE/floor1.png"
+    "filepath": "data/MODELS/floor_01.x"
   },
   {
     "type": 2,
-    "filepath": "data/MODELS/torch_01.x",
-    "GUItexFilepath": "data/TEXTURE/torch_01.png"
+    "filepath": "data/MODELS/torch_01.x"
   },
   {
     "type": 3,
-    "filepath": "data/MODELS/rock_01.x",
-    "GUItexFilepath": "data/TEXTURE/rock_01.png"
+    "filepath": "data/MODELS/rock_01.x"
   },
   {
     "type": 4,
-    "filepath": "data/MODELS/grass.x",
-    "GUItexFilepath": "data/TEXTURE/grass000.png"
+    "filepath": "data/MODELS/grass.x"
   },
   {
     "type": 5,
-    "filepath": "data/MODELS/water_01.x",
-    "GUItexFilepath": "data/TEXTURE/water_01.png"
+    "filepath": "data/MODELS/water_01.x"
   },
   {
     "type": 6,
-    "filepath": "data/MODELS/floor_02.x",
-    "GUItexFilepath": "data/TEXTURE/floor_02.png"
+    "filepath": "data/MODELS/floor_02.x"
   },
   {
     "type": 7,
-    "filepath": "data/MODELS/woodbox.x",
-    "GUItexFilepath": "data/TEXTURE/woodbox.png"
+    "filepath": "data/MODELS/woodbox.x"
   }
 ]

@@ -12,6 +12,7 @@
 #include "renderer.h"
 #include "manager.h"
 #include "game.h"
+#include "player.h"
 
 //=============================================================================
 // コンストラクタ

@@ -12,6 +12,7 @@
 #include "title.h"
 #include "game.h"
 #include "result.h"
+#include "ranking.h"
 
 //=============================================================================
 // コンストラクタ
@@ -50,7 +51,11 @@ CScene* CScene::Create(MODE mode)
 	case MODE_RESULT:
 		// リザルト画面の生成
 		pScene = new CResult();
+		break;
 
+	case MODE_RANKING:
+		// ランキング画面の生成
+		pScene = new CRanking();
 		break;
 
 	default:

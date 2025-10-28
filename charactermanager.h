@@ -96,6 +96,7 @@ public:
     void SetPos(D3DXVECTOR3 pos) { m_pos = pos; }
     void SetRot(D3DXVECTOR3 rot) { m_rot = rot; }
     void SetRotDest(const D3DXVECTOR3& rotDest) { m_rotDest = rotDest; }
+    void SetMove(D3DXVECTOR3 move) { m_move = move; }
 
     //*****************************************************************************
     // getter関数
@@ -104,6 +105,7 @@ public:
     D3DXVECTOR3 GetRot(void) { return m_rot; };
     const D3DXVECTOR3& GetRotDest(void) const { return m_rotDest; }
     D3DXVECTOR3 GetSize(void) { return m_size; }
+    D3DXVECTOR3 GetMove(void) const { return m_move; }
     float GetHp(void) const { return m_fHp; }
     float GetMaxHp(void) const { return m_fMaxHp; }
     btScalar GetRadius(void) const { return m_radius; }
@@ -124,6 +126,7 @@ private:
     D3DXVECTOR3 m_rot;			// 向き
     D3DXVECTOR3 m_rotDest;		// 向き
     D3DXVECTOR3 m_size;			// サイズ
+    D3DXVECTOR3 m_move;			// 移動量
     btRigidBody* m_pRigidBody;	// 剛体へのポインタ
     btCollisionShape* m_pShape;	// 当たり判定の形へのポインタ
     btScalar m_radius;			// カプセルコライダーの半径
@@ -170,9 +173,22 @@ public:
     {
         for (auto chara : m_characters)
         {
-            // キャラクターの更新処理
+            // キャラクターの初期化処理
             chara->Init();
         }
+    }
+
+    void Uninit(void)
+    {
+        for (auto chara : m_characters)
+        {
+            // キャラクターの終了処理
+            chara->Uninit();
+            delete chara;
+        }
+
+        // リストのクリア(空にする)
+        m_characters.clear();
     }
 
     void Update(void)
@@ -191,19 +207,6 @@ public:
             // キャラクターの描画処理
             chara->Draw();
         }
-    }
-
-    void Uninit(void)
-    {
-        for (auto chara : m_characters)
-        {
-            // キャラクターの終了処理
-            chara->Uninit();
-            delete chara;
-        }
-
-        // リストのクリア(空にする)
-        m_characters.clear();
     }
 
 private:

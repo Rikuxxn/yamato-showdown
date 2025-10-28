@@ -92,7 +92,6 @@ void CBlock::InitFactory(void)
 	m_BlockFactoryMap[CBlock::TYPE_TORCH_01]		= []() -> CBlock* { return new CTorchBlock(); };
 	m_BlockFactoryMap[CBlock::TYPE_WATER]			= []() -> CBlock* { return new CWaterBlock(); };
 	m_BlockFactoryMap[CBlock::TYPE_WOODBOX]			= []() -> CBlock* { return new CWoodBoxBlock(); };
-	m_BlockFactoryMap[CBlock::TYPE_SEESAW]			= []() -> CBlock* { return new CSeesawBlock(); };
 }
 //=============================================================================
 // ‰Šú‰»ˆ—

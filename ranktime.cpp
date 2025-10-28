@@ -1,6 +1,6 @@
 //=============================================================================
 //
-// タイム処理 [time.cpp]
+// タイム処理 [ranktime.cpp]
 // Author : RIKU TANEKAWA
 //
 //=============================================================================
@@ -8,94 +8,96 @@
 //*****************************************************************************
 // インクルードファイル
 //*****************************************************************************
-#include "time.h"
+#include "ranktime.h"
 #include "renderer.h"
 #include "manager.h"
+#include "time.h"
+#include "rank.h"
 
 //=============================================================================
 // コンストラクタ
 //=============================================================================
-CTime::CTime(int nPriority) : CObject(nPriority)
+CRankTime::CRankTime(int nPriority) : CObject(nPriority)
 {
 	// 値のクリア
-	for (int nCnt = 0; nCnt < DIGITS; nCnt++)
-	{
-		m_apNumber[nCnt] = {};					// 各桁の数字表示用
-	}
+	memset(m_apNumber, 0, sizeof(m_apNumber));	// 各桁の数字表示用
+	memset(m_apRankClon, 0, sizeof(m_apRankClon));	// コロンへのポインタ
 	m_nMinutes = 0;								// 分
 	m_nSeconds = 0;								// 秒
 	m_nFrameCount = 0;							// フレームカウント
 	m_digitWidth = 0.0f;						// 数字1桁あたりの幅
 	m_digitHeight = 0.0f;						// 数字1桁あたりの高さ
 	m_basePos = INIT_VEC3;						// 表示の開始位置
-	m_pColon = nullptr;							// コロン
 	m_nIdxTexture = 0;							// テクスチャインデックス
 }
 //=============================================================================
 // デストラクタ
 //=============================================================================
-CTime::~CTime()
+CRankTime::~CRankTime()
 {
 	// なし
 }
 //=============================================================================
 // 生成処理
 //=============================================================================
-CTime* CTime::Create(int minutes, int seconds,float baseX,float baseY,float digitWidth,float digitHeight)
+CRankTime* CRankTime::Create(float baseX,float baseY,float digitWidth,float digitHeight)
 {
-	CTime* pTime;
+	CRankTime* pRankTime;
 
-	pTime = new CTime;
+	pRankTime = new CRankTime;
 
-	pTime->m_nMinutes = minutes;
-	pTime->m_nSeconds = seconds;
-	pTime->m_nFrameCount = 0;
-	pTime->m_basePos = D3DXVECTOR3(baseX, baseY, 0.0f);
-	pTime->m_digitWidth = digitWidth;
-	pTime->m_digitHeight = digitHeight;
+	pRankTime->m_nFrameCount = 0;
+	pRankTime->m_basePos = D3DXVECTOR3(baseX, baseY, 0.0f);
+	pRankTime->m_digitWidth = digitWidth;
+	pRankTime->m_digitHeight = digitHeight;
 
 	// 初期化処理
-	pTime->Init();
+	pRankTime->Init();
 
-	return pTime;
+	return pRankTime;
 }
 //=============================================================================
 // 初期化処理
 //=============================================================================
-HRESULT CTime::Init(void)
+HRESULT CRankTime::Init(void)
 {
-	// 分の数字（0,1桁）
-	for (int nCnt = 0; nCnt < 2; nCnt++)
+	// 5位まで生成する
+	for (int i = 0; i < MaxRanking; i++)
 	{
-		float posX = m_basePos.x + nCnt * m_digitWidth;
-		float posY = m_basePos.y;
+		// 順位UIの生成
+		float UIbaseX = m_basePos.x + m_digitWidth;
+		float UIbaseY = m_basePos.y + i * (m_digitHeight + 50.0f);
 
-		// ナンバーの生成
-		m_apNumber[nCnt] = CNumber::Create(posX, posY, m_digitWidth, m_digitHeight);
+		// テスト
+		CRank::Create(D3DXVECTOR3(UIbaseX, UIbaseY, 0.0f), m_digitWidth / 2, m_digitHeight, (float)i);
 
-		if (!m_apNumber[nCnt])
+		// 順位UIの幅
+		float rankWidth = (m_digitWidth / 2) + 50.0f;
+
+		// 分
+		for (int n = 0; n < 2; n++)
 		{
-			return E_FAIL;
+			float x = UIbaseX + rankWidth + n * m_digitWidth;
+			float y = UIbaseY;
+
+			m_apNumber[i][n] = CNumber::Create(x, y, m_digitWidth, m_digitHeight);
 		}
-	}
+		
+		// コロンの生成（分と秒の間）
+		float colonX = UIbaseX + rankWidth + 2 * m_digitWidth;
+		float colonY = UIbaseY;
+		m_apRankClon[i] = CRankColon::Create(D3DXVECTOR3(colonX, colonY, 0.0f), m_digitWidth / 2, m_digitHeight);
 
-	// コロンの生成
-	CColon::Create(D3DXVECTOR3(m_basePos.x + 2 * m_digitWidth, m_basePos.y, 0.0f), m_digitWidth / 2, m_digitHeight);
+		// コロンの幅
+		float colonWidth = rankWidth + m_digitWidth / 2;
 
-	// コロンの幅
-	float colonWidth = m_digitWidth / 2;
-
-	// 秒の数字はコロンの幅だけ右にずらす
-	for (int nCnt = 2; nCnt < DIGITS; nCnt++)
-	{
-		float posX = m_basePos.x + colonWidth + nCnt * m_digitWidth;
-		float posY = m_basePos.y;
-
-		m_apNumber[nCnt] = CNumber::Create(posX, posY, m_digitWidth, m_digitHeight);
-
-		if (!m_apNumber[nCnt])
+		// 秒
+		for (int n = 2; n < DIGITS; n++)
 		{
-			return E_FAIL;
+			float x = UIbaseX + colonWidth + n * m_digitWidth;
+			float y = UIbaseY;
+
+			m_apNumber[i][n] = CNumber::Create(x, y, m_digitWidth, m_digitHeight);
 		}
 	}
 
@@ -108,17 +110,20 @@ HRESULT CTime::Init(void)
 //=============================================================================
 // 終了処理
 //=============================================================================
-void CTime::Uninit(void)
+void CRankTime::Uninit(void)
 {
-	for (int nCnt = 0; nCnt < DIGITS; nCnt++)
+	for (int i = 0; i < MaxRanking; i++)
 	{
-		if (m_apNumber[nCnt] != nullptr)
+		for (int n = 0; n < DIGITS; n++)
 		{
-			// ナンバーの終了処理
-			m_apNumber[nCnt]->Uninit();
+			if (m_apNumber[i][n])
+			{
+				// ナンバーの終了処理
+				m_apNumber[i][n]->Uninit();
 
-			delete m_apNumber[nCnt];
-			m_apNumber[nCnt] = nullptr;
+				delete m_apNumber[i][n];
+				m_apNumber[i][n] = nullptr;
+			}
 		}
 	}
 
@@ -128,91 +133,16 @@ void CTime::Uninit(void)
 //=============================================================================
 // 更新処理
 //=============================================================================
-void CTime::Update(void)
+void CRankTime::Update(void)
 {
-	// タイマーカウントダウン処理
-	Countdown();
-
-	// 各桁の表示値を計算
-	int min10 = m_nMinutes / 10;
-	int min1 = m_nMinutes % 10;
-	int sec10 = m_nSeconds / 10;
-	int sec1 = m_nSeconds % 10;
-
-	// ナンバーオブジェクトに反映
-	if (m_apNumber[0]) m_apNumber[0]->SetDigit(min10);
-	if (m_apNumber[1]) m_apNumber[1]->SetDigit(min1);
-	if (m_apNumber[2]) m_apNumber[2]->SetDigit(sec10);
-	if (m_apNumber[3]) m_apNumber[3]->SetDigit(sec1);
-
-	for (int nCnt = 0; nCnt < 4; nCnt++)
+	for (int i = 0; i < MaxRanking; i++)
 	{
-		m_apNumber[nCnt]->Update();  // UV更新
-	}
-}
-//=============================================================================
-// タイマーカウントアップ処理
-//=============================================================================
-void CTime::Countup(void)
-{
-	if (CManager::GetMode() == MODE_RESULT)
-	{
-		return;
-	}
-
-	// フレームカウント
-	m_nFrameCount++;
-
-	// 60フレーム経過したら1秒加算
-	if (m_nFrameCount >= 60)
-	{
-		m_nFrameCount = 0;
-
-		m_nSeconds++;
-
-		// 60秒で1分繰り上げ
-		if (m_nSeconds >= 60)
+		for (int n = 0; n < DIGITS; n++)
 		{
-			m_nSeconds = 0;
-			m_nMinutes++;
-		}
-	}
-}
-//=============================================================================
-// タイマーカウントダウン処理
-//=============================================================================
-void CTime::Countdown(void)
-{
-	if (CManager::GetMode() == MODE_RESULT)
-	{
-		return;
-	}
-
-	// フレームカウント
-	m_nFrameCount++;
-
-	// 60フレーム経過したら1秒加算
-	if (m_nFrameCount >= 60)
-	{
-		m_nFrameCount = 0;
-
-		// 秒を1減らす
-		if (m_nSeconds > 0)
-		{
-			m_nSeconds--;
-		}
-		else
-		{
-			// 秒が0の場合、分を1減らして秒を59にする
-			if (m_nMinutes > 0)
+			if (m_apNumber[i][n])
 			{
-				m_nMinutes--;
-				m_nSeconds = 59;
-			}
-			else
-			{
-				// 分も0ならタイムアップ
-				m_nSeconds = 0;
+				// ナンバーの更新処理(UV)
+				m_apNumber[i][n]->Update();
 			}
 		}
 	}
@@ -220,42 +150,63 @@ void CTime::Countdown(void)
 //=============================================================================
 // 描画処理
 //=============================================================================
-void CTime::Draw(void)
+void CRankTime::Draw(void)
 {
-	if (CManager::GetMode() == CScene::MODE_RESULT)
+	// テクスチャの取得
+	CTexture* pTexture = CManager::GetTexture();
+
+	// デバイスの取得
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
+
+	for (int i = 0; i < MaxRanking; i++)
 	{
-		// テクスチャの取得
-		CTexture* pTexture = CManager::GetTexture();
-
-		// デバイスの取得
-		LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
-
-		for (int nCnt = 0; nCnt < DIGITS; nCnt++)
+		for (int n = 0; n < DIGITS; n++)
 		{
-			if (m_apNumber[nCnt])
+			if (m_apNumber[i][n])
 			{
 				// テクスチャの設定
 				pDevice->SetTexture(0, pTexture->GetAddress(m_nIdxTexture));
 
-				m_apNumber[nCnt]->Draw();
+				// ナンバーの描画処理
+				m_apNumber[i][n]->Draw();
 			}
 		}
 	}
 }
 //=============================================================================
+// ランキングリストの設定処理
+//=============================================================================
+void CRankTime::SetRankList(const std::vector<std::pair<int, int>>& rankList)
+{
+	for (int i = 0; i < rankList.size() && i < MaxRanking; i++)
+	{
+		int min10 = rankList[i].first / 10;
+		int min1 = rankList[i].first % 10;
+		int sec10 = rankList[i].second / 10;
+		int sec1 = rankList[i].second % 10;
+
+		if (m_apNumber[i][0])m_apNumber[i][0]->SetDigit(min10);
+		if (m_apNumber[i][1])m_apNumber[i][1]->SetDigit(min1);
+		if (m_apNumber[i][2])m_apNumber[i][2]->SetDigit(sec10);
+		if (m_apNumber[i][3])m_apNumber[i][3]->SetDigit(sec1);
+	}
+}
+//=============================================================================
 // 位置の取得
 //=============================================================================
-D3DXVECTOR3 CTime::GetPos(void)
+D3DXVECTOR3 CRankTime::GetPos(void)
 {
 	return D3DXVECTOR3();
 }
+
+
 //=============================================================================
 // コロンのコンストラクタ
 //=============================================================================
-CColon::CColon(int nPriority) : CObject(nPriority)
+CRankColon::CRankColon(int nPriority) : CObject(nPriority)
 {
 	// 値のクリア
-	m_pVtxBuff = NULL;						// 頂点バッファ
+	m_pVtxBuff = nullptr;					// 頂点バッファ
 	m_pos = D3DXVECTOR3(0.0f,0.0f,0.0f);	// 位置
 	m_fWidth = 0.0f;						// 幅
 	m_fHeight = 0.0f;						// 高さ
@@ -264,32 +215,32 @@ CColon::CColon(int nPriority) : CObject(nPriority)
 //=============================================================================
 // コロンのデストラクタ
 //=============================================================================
-CColon::~CColon()
+CRankColon::~CRankColon()
 {
 	// なし
 }
 //=============================================================================
 // コロンの生成処理
 //=============================================================================
-CColon* CColon::Create(D3DXVECTOR3 pos, float fWidth, float fHeight)
+CRankColon* CRankColon::Create(D3DXVECTOR3 pos, float fWidth, float fHeight)
 {
-	CColon* pColon;
+	CRankColon* pRankColon;
 
-	pColon = new CColon;
+	pRankColon = new CRankColon;
 
-	pColon->m_pos = pos;
-	pColon->m_fWidth = fWidth;
-	pColon->m_fHeight = fHeight;
+	pRankColon->m_pos = pos;
+	pRankColon->m_fWidth = fWidth;
+	pRankColon->m_fHeight = fHeight;
 
 	// 初期化処理
-	pColon->Init();
+	pRankColon->Init();
 
-	return pColon;
+	return pRankColon;
 }
 //=============================================================================
 // コロンの初期化処理
 //=============================================================================
-HRESULT CColon::Init(void)
+HRESULT CRankColon::Init(void)
 {
 	// デバイス取得
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
@@ -341,7 +292,7 @@ HRESULT CColon::Init(void)
 //=============================================================================
 // コロンの終了処理
 //=============================================================================
-void CColon::Uninit(void)
+void CRankColon::Uninit(void)
 {
 	// 頂点バッファの破棄
 	if (m_pVtxBuff != nullptr)
@@ -350,12 +301,12 @@ void CColon::Uninit(void)
 		m_pVtxBuff = nullptr;
 	}
 
-	CObject::Release();
+	this->Release();
 }
 //=============================================================================
 // コロンの更新処理
 //=============================================================================
-void CColon::Update(void)
+void CRankColon::Update(void)
 {
 
 
@@ -365,9 +316,9 @@ void CColon::Update(void)
 //=============================================================================
 // コロンの描画処理
 //=============================================================================
-void CColon::Draw(void)
+void CRankColon::Draw(void)
 {
-	if (CManager::GetMode() == CScene::MODE_RESULT)
+	if (CManager::GetMode() == CScene::MODE_RANKING)
 	{
 		// テクスチャの取得
 		CTexture* pTexture = CManager::GetTexture();
@@ -391,7 +342,7 @@ void CColon::Draw(void)
 //=============================================================================
 // コロンの位置取得処理
 //=============================================================================
-D3DXVECTOR3 CColon::GetPos(void)
+D3DXVECTOR3 CRankColon::GetPos(void)
 {
 	// 使わない
 	return D3DXVECTOR3();

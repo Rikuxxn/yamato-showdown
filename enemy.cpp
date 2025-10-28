@@ -22,7 +22,6 @@ CEnemy::CEnemy()
 {
 	// 値のクリア
 	memset(m_apModel, 0, sizeof(m_apModel));			// モデル(パーツ)へのポインタ
-	m_move			= INIT_VEC3;						// 移動量
 	m_mtxWorld		= {};								// ワールドマトリックス
 	m_nNumModel		= 0;								// モデル(パーツ)の総数
 	m_pShadowS		= nullptr;							// ステンシルシャドウへのポインタ
@@ -161,10 +160,8 @@ void CEnemy::Update(void)
 		m_pShadowS->SetPosition(GetPos());
 	}
 
-	int nNumModels = 16;
-
 	// モーションの更新処理
-	m_pMotion->Update(m_apModel, nNumModels);
+	m_pMotion->Update(m_apModel, m_nNumModel);
 }
 //=============================================================================
 // 描画処理

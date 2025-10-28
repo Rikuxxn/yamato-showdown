@@ -12,11 +12,12 @@
 #include "manager.h"
 #include "game.h"
 #include "easing.h"
+#include "player.h"
 
 //=============================================================================
 // コンストラクタ
 //=============================================================================
-CGrassBlock::CGrassBlock()
+CGrassBlock::CGrassBlock(int nPriority) : CBlock(nPriority)
 {
 	// 値のクリア
 	m_rotVel = INIT_VEC3;

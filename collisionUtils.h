@@ -45,6 +45,14 @@ public:
 	// カプセルとOBBの当たり判定
 	static bool CheckCapsuleOBBCollision(const CCapsuleCollider* capsule, const CBoxCollider* obb);
 
+	// 線分とカプセルの当たり判定
+	static bool IntersectSegmentCapsule(
+		const D3DXVECTOR3& segA,
+		const D3DXVECTOR3& segB,
+		const D3DXVECTOR3& capsuleBottom,
+		const D3DXVECTOR3& capsuleTop,
+		float radius);
+
 private:
 	//*************************************************************************
 	// 補助関数
@@ -62,6 +70,14 @@ private:
 
 	static D3DXVECTOR3 ClosestPointSegmentAABB(const D3DXVECTOR3& a, const D3DXVECTOR3& b,
 		const D3DXVECTOR3& minVal, const D3DXVECTOR3& maxVal);
+
+	// 2つの線分 (p1-q1, p2-q2) 間の最短距離の二乗を計算する処理
+	// outClosestPoint1, outClosestPoint2 は最近接点を返す
+	static float DistanceSqSegmentSegment(
+		const D3DXVECTOR3& p1, const D3DXVECTOR3& q1,
+		const D3DXVECTOR3& p2, const D3DXVECTOR3& q2,
+		D3DXVECTOR3* outClosestPoint1,
+		D3DXVECTOR3* outClosestPoint2);
 };
 
 

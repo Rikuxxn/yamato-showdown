@@ -17,19 +17,7 @@
 //*****************************************************************************
 class CLight
 {
-public:
-	CLight();
-	~CLight();
-
-	HRESULT Init(void);
-	void Uninit(void);
-	void Update(void);
-	static int AddLight(D3DLIGHTTYPE type, const D3DXCOLOR& diffuse, const D3DXVECTOR3& direction, const D3DXVECTOR3& position);
-	void DeleteLight(int index); // ライト削除
-
 private:
-    static constexpr int MAX_LIGHTS = 32; // ライトの最大数
-
     typedef struct
     {
         D3DLIGHT9 light;
@@ -37,6 +25,22 @@ private:
         D3DXVECTOR3 position;
         bool enabled;
     }LightInfo;
+
+public:
+	CLight();
+	~CLight();
+
+	HRESULT Init(void);
+	static void Uninit(void);
+	void Update(void);
+	static int AddLight(D3DLIGHTTYPE type, const D3DXCOLOR& diffuse, const D3DXVECTOR3& direction, const D3DXVECTOR3& position);
+	void DeleteLight(int index); // ライト削除
+    static std::vector<LightInfo> GetCurrentLights(void);
+    static void RestoreLights(const std::vector<LightInfo>& backup);
+    static int GetLightNum(void) { return m_lightCount; }
+
+private:
+    static constexpr int MAX_LIGHTS = 32; // ライトの最大数
 
     static LightInfo m_lights[MAX_LIGHTS];
     static int m_lightCount;        // ライトカウント

@@ -12,19 +12,26 @@
 #include "input.h"
 #include "manager.h"
 
+
+//*****************************************************************************
+// 静的メンバ変数宣言
+//*****************************************************************************
+CBlockManager* CTitle::m_pBlockManager = nullptr;		// ブロックマネージャーへのポインタ
+
 //=============================================================================
 // コンストラクタ
 //=============================================================================
 CTitle::CTitle() : CScene(CScene::MODE_TITLE)
 {
 	// 値のクリア
-	m_pVtxBuff = NULL;		// 頂点バッファへのポインタ
+	m_pVtxBuff = nullptr;		// 頂点バッファへのポインタ
 	m_nIdxTextureTitle = 0;
 	m_nIdxTexturePress = 0;
 	m_alphaPress = 0.0f;          // 現在のα値（0.0f ～ 1.0f）
 	m_isAlphaDown = false;         // 点滅用フラグ（上げる/下げる）
 	m_isEnterPressed = false;      // エンターキー押された
 	m_state = WAIT_PRESS;
+	m_pLight = nullptr;
 
 	for (int nCnt = 0; nCnt < TYPE_MAX; nCnt++)
 	{
@@ -51,6 +58,15 @@ HRESULT CTitle::Init(void)
 
 	// ブロックマネージャーの初期化
 	m_pBlockManager->Init();
+
+	// ライトの生成
+	m_pLight = new CLight;
+
+	// ライトの初期化
+	m_pLight->Init();
+
+	// ライトの再設定処理
+	ResetLight();
 
 	// JSONの読み込み
 	m_pBlockManager->LoadFromJson("data/block_title.json");
@@ -134,6 +150,13 @@ void CTitle::Uninit(void)
 
 		delete m_pBlockManager;
 		m_pBlockManager = nullptr;
+	}
+
+	// ライトの破棄
+	if (m_pLight != nullptr)
+	{
+		delete m_pLight;
+		m_pLight = nullptr;
 	}
 
 	// 頂点バッファの破棄
@@ -241,6 +264,30 @@ void CTitle::Draw(void)
 		// ポリゴンの描画
 		pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_vertexRanges[nCnt].start, 2);
 	}
+}
+//=============================================================================
+// ライト設定処理
+//=============================================================================
+void CTitle::ResetLight(void)
+{
+	// ライトを削除しておく
+	CLight::Uninit();
+
+	// ライトの初期設定処理
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.9f, 0.9f, 0.9f, 1.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR3(0.0f, 300.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.3f, 0.3f, 0.3f, 1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, -1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+}
+//=============================================================================
+// デバイスリセット通知
+//=============================================================================
+void CTitle::OnDeviceReset(void)
+{
+	// ライトの再設定処理
+	ResetLight();
 }
 //=============================================================================
 // 入力処理

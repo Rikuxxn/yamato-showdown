@@ -49,7 +49,6 @@ public:
 		TYPE_FLOOR2,
 
 		TYPE_WOODBOX,
-		TYPE_SEESAW,
 		TYPE_MAX
 	}TYPE;
 
@@ -77,6 +76,7 @@ public:
 	// flagment関数
 	//*****************************************************************************
 	bool IsSelected(void) const { return m_bSelected; }									// ブロックが選択中のフラグを返す
+	bool IsEditMode(void) const { return m_isEditMode; }								// エディット中かどうか
 	virtual bool IsDynamicBlock(void) const { return false; }							// 動的ブロックの判別
 	virtual bool IsEnd(void) { return false; }
 	virtual bool IsGet(void) { return false; }
@@ -100,7 +100,6 @@ public:
 	btRigidBody* GetRigidBody(void) const { return m_pRigidBody; }						// RigidBodyの取得
 	D3DXVECTOR3 GetColliderSize(void) const { return m_colliderSize; }					// コライダーサイズの取得
 	D3DXVECTOR3 GetColliderOffset(void) const { return m_colliderOffset; }				// コライダーのオフセットの取得
-	bool IsEditMode(void) const { return m_isEditMode; }								// エディット中かどうか
 	virtual btScalar GetMass(void) const { return 2.0f; }								// 質量の取得
 	bool IsDead(void) const { return m_isDead; }										// 削除予約の取得
 	D3DXMATRIX GetWorldMatrix(void);

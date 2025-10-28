@@ -23,7 +23,6 @@ CInputMouse* CManager::m_pInputMouse = nullptr;
 CSound* CManager::m_pSound = nullptr;
 CTexture* CManager::m_pTexture = nullptr;
 CCamera* CManager::m_pCamera = nullptr;
-CLight* CManager::m_pLight = nullptr;
 CScene* CManager::m_pScene = nullptr;
 CFade* CManager::m_pFade = nullptr;
 std::unique_ptr<btDiscreteDynamicsWorld> CManager::m_pDynamicsWorld = nullptr;
@@ -116,12 +115,6 @@ HRESULT CManager::Init(HINSTANCE hInstance, HWND hWnd)
 
 	// カメラの初期化処理
 	m_pCamera->Init();
-
-	// ライトの生成
-	m_pLight = new CLight;
-
-	// ライトの初期化処理
-	m_pLight->Init();
 
 	// テクスチャの生成
 	m_pTexture = new CTexture;
@@ -229,13 +222,6 @@ void CManager::Uninit(void)
 		m_pCamera = nullptr;
 	}
 
-	// ライトの破棄
-	if (m_pLight != nullptr)
-	{
-		delete m_pLight;
-		m_pLight = nullptr;
-	}
-
 	// フェードの破棄
 	if (m_pFade != nullptr)
 	{
@@ -299,9 +285,6 @@ void CManager::Update(void)
 	// カメラの更新
 	m_pCamera->Update();
 
-	// ライトの更新
-	m_pLight->Update();
-
 	// レンダラーの更新
 	m_pRenderer->Update();
 }
@@ -345,4 +328,14 @@ void CManager::SetMode(CScene::MODE mode)
 CScene::MODE CManager::GetMode(void)
 {
 	return m_pScene->GetMode();
+}
+//=============================================================================
+// デバイスリセット通知
+//=============================================================================
+void CManager::OnDeviceReset(void)
+{
+	if (m_pScene)
+	{
+		m_pScene->OnDeviceReset();
+	}
 }

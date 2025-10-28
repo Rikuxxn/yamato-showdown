@@ -15,6 +15,7 @@
 #include "game.h"
 #include "imguimaneger.h"
 #include "guiInfo.h"
+#include "title.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
@@ -196,6 +197,11 @@ void CRenderer::Update(void)
 
 	ImGui::Dummy(ImVec2(0.0f, 10.0f)); // 空白を空ける
 
+	// ライトの個数
+	ImGui::Text("Light Num : %d", CLight::GetLightNum());
+
+	ImGui::Dummy(ImVec2(0.0f, 10.0f)); // 空白を空ける
+
 	// プレイヤーのデバッグ情報の表示処理
 	CGuiInfo::PlayerInfo();
 
@@ -278,6 +284,19 @@ void CRenderer::ResetDevice(void)
 
 	ImGui_ImplDX9_InvalidateDeviceObjects();
 
+	CBlockManager* pBlockMgr = CGame::GetBlockManager();
+	CBlockManager* pBlockMgrTitle = CTitle::GetBlockManager();
+
+	if (pBlockMgr)
+	{
+		pBlockMgr->ReleaseThumbnailRenderTarget();
+	}
+
+	if (pBlockMgrTitle)
+	{
+		pBlockMgrTitle->ReleaseThumbnailRenderTarget();
+	}
+
 	HRESULT hr = m_pD3DDevice->Reset(&m_d3dpp);
 
 	if (hr == D3DERR_INVALIDCALL)
@@ -286,6 +305,17 @@ void CRenderer::ResetDevice(void)
 	}
 
 	ImGui_ImplDX9_CreateDeviceObjects();
+
+	if (pBlockMgr)
+	{
+		pBlockMgr->InitThumbnailRenderTarget(m_pD3DDevice);
+		pBlockMgr->GenerateThumbnailsForResources(); // 必要ならキャッシュも再作成
+	}
+	if (pBlockMgrTitle)
+	{
+		pBlockMgrTitle->InitThumbnailRenderTarget(m_pD3DDevice);
+		pBlockMgrTitle->GenerateThumbnailsForResources(); // 必要ならキャッシュも再作成
+	}
 
 	// レンダーステートの設定
 	m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
@@ -310,18 +340,8 @@ void CRenderer::ResetDevice(void)
 	// 3Dデバッグ表示の初期化
 	m_pDebug3D->Init();
 
-	CLight* pLight = CManager::GetLight();
-
-	// ライトの初期化処理
-	pLight->Init();
-
-	// ライトの初期設定処理
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.9f, 0.9f, 0.9f, 1.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR3(0.0f, 300.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.3f, 0.3f, 0.3f, 1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, -1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	// デバイスリセット通知(ライト)
+	CManager::OnDeviceReset();
 }
 //=============================================================================
 // 頂点シェーダコンパイル用関数

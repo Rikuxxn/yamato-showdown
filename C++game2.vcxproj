@@ -212,6 +212,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="player.cpp" />
+    <ClCompile Include="rank.cpp" />
+    <ClCompile Include="ranking.cpp" />
+    <ClCompile Include="rankingmanager.cpp" />
+    <ClCompile Include="ranktime.cpp" />
     <ClCompile Include="raycast.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="result.cpp" />
@@ -221,6 +225,7 @@
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="time.cpp" />
     <ClCompile Include="title.cpp" />
+    <ClCompile Include="weaponcollider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block.h" />
@@ -269,6 +274,10 @@
     <ClInclude Include="pausemanager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="rank.h" />
+    <ClInclude Include="ranking.h" />
+    <ClInclude Include="rankingmanager.h" />
+    <ClInclude Include="ranktime.h" />
     <ClInclude Include="raycast.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="result.h" />
@@ -279,6 +288,7 @@
     <ClInclude Include="texture.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="title.h" />
+    <ClInclude Include="weaponcollider.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="OutlinePS.hlsl">

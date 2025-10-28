@@ -12,6 +12,7 @@
 #include "renderer.h"
 #include "manager.h"
 #include "game.h"
+#include "player.h"
 
 // –¼‘O‹óŠÔstd‚ÌŽg—p
 using namespace std;

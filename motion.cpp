@@ -525,9 +525,42 @@ bool CMotion::IsCurrentMotionEnd(int motionType) const
 	return (m_motionType == motionType) && m_bFinishMotion;
 }
 //=============================================================================
-// 攻撃中かどうか
+// 攻撃中かどうか(フレーム)
+//=============================================================================
+bool CMotion::IsAttacking(int motionType, int keyIndex, int startFrame, int endFrame) const
+{
+	if (m_motionType != motionType)
+	{
+		return false; // 指定モーションでない場合は false
+	}
+
+	if (m_bFinishMotion)
+	{
+		return false;           // モーション終了なら false
+	}
+
+	if (m_nKey != keyIndex)
+	{
+		return false;          // 現在のキーと一致するか
+	}
+
+	return m_nCounterMotion >= startFrame && m_nCounterMotion <= endFrame;
+}
+//=============================================================================
+// 単純に攻撃中かどうかを返す（モーションタイプだけで判定）
 //=============================================================================
 bool CMotion::IsAttacking(void) const
 {
-	return m_motionType == CPlayer::ATTACK_01 && !m_bFinishMotion;
+	// 攻撃モーションの種類配列
+	static const int attackMotions[] = { CPlayer::ATTACK_01 };
+
+	for (int type : attackMotions)
+	{
+		if (m_motionType == type)
+		{
+			return true; // 攻撃モーション再生中
+		}
+	}
+
+	return false; // 攻撃モーション以外
 }

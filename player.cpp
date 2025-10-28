@@ -10,10 +10,9 @@
 //*****************************************************************************
 #include "player.h"
 #include "texture.h"
-#include "model.h"
 #include "particle.h"
-#include "game.h"
 #include "guage.h"
+#include "manager.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -25,7 +24,6 @@ CPlayer::CPlayer()
 {
 	// 値のクリア
 	memset(m_apModel, 0, sizeof(m_apModel));			// モデル(パーツ)へのポインタ
-	m_move				= INIT_VEC3;					// 移動量
 	m_mtxWorld			= {};							// ワールドマトリックス
 	m_nNumModel			= 0;							// モデル(パーツ)の総数
 	m_playerUse			= true;							// 使われているかどうか
@@ -35,6 +33,10 @@ CPlayer::CPlayer()
 	m_bOnGround			= false;						// 接地フラグ
 	m_pDebug3D			= nullptr;						// 3Dデバッグ表示へのポインタ
 	m_particleTimer		= 0;							// パーティクルタイマー
+	m_pSwordModel		= nullptr;						// 武器モデルのポインタ
+	m_pWeaponCollider	= nullptr;						// 武器の当たり判定へのポインタ
+	m_pTipModel			= nullptr;						// 武器コライダー用モデル
+	m_pBaseModel		= nullptr;						// 武器コライダー用モデル
 }
 //=============================================================================
 // デストラクタ
@@ -76,10 +78,25 @@ HRESULT CPlayer::Init(void)
 		// オフセット考慮
 		m_apModel[nCnt]->SetOffsetPos(m_apModel[nCnt]->GetPos());
 		m_apModel[nCnt]->SetOffsetRot(m_apModel[nCnt]->GetRot());
+
+		// 名前に weapon が含まれていたら武器パーツと認識
+		if (strstr(m_apModel[nCnt]->GetPath(), "weapon") != nullptr)
+		{
+			m_pSwordModel = m_apModel[nCnt];
+		}
 	}
 
 	// パーツ数を代入
 	m_nNumModel = nNumModels;
+
+	// 武器コライダーの生成
+	m_pWeaponCollider = make_unique<CWeaponCollider>();
+
+#ifdef _DEBUG
+	// 武器コライダーモデルの生成
+	m_pTipModel = CObjectX::Create("data/MODELS/weapon_collider.x", m_pWeaponCollider->GetCurrentTipPos(), INIT_VEC3, D3DXVECTOR3(1.0f, 1.0f, 1.0f));
+	m_pBaseModel = CObjectX::Create("data/MODELS/weapon_collider.x", m_pWeaponCollider->GetCurrentBasePos(), INIT_VEC3, D3DXVECTOR3(1.0f, 1.0f, 1.0f));
+#endif
 
 	// プレイヤーが使われている
 	m_playerUse = true;
@@ -139,6 +156,17 @@ void CPlayer::Uninit(void)
 //=============================================================================
 void CPlayer::Update(void)
 {
+	// カメラの取得
+	CCamera* pCamera = CManager::GetCamera();
+
+	// カメラの角度の取得
+	D3DXVECTOR3 CamRot = pCamera->GetRot();
+
+	// 接地判定
+	m_bOnGround = OnGround(CManager::GetPhysicsWorld(), GetRigidBody(), 55.0f);
+
+	// 武器コライダーの更新
+	m_pWeaponCollider->Update(m_pSwordModel);
 
 #ifdef _DEBUG
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
@@ -154,16 +182,11 @@ void CPlayer::Update(void)
 		Heal(1.0f);
 	}
 
+	// 武器コライダー用モデルの位置更新
+	m_pTipModel->SetPos(m_pWeaponCollider->GetCurrentTipPos());
+	m_pBaseModel->SetPos(m_pWeaponCollider->GetCurrentBasePos());
+
 #endif
-
-	// カメラの取得
-	CCamera* pCamera = CManager::GetCamera();
-
-	// カメラの角度の取得
-	D3DXVECTOR3 CamRot = pCamera->GetRot();
-
-	// 接地判定
-	m_bOnGround = OnGround(CManager::GetPhysicsWorld(), GetRigidBody(), 55.0f);
 
 	// ステートマシン更新
 	m_stateMachine.Update();
@@ -192,39 +215,39 @@ void CPlayer::Update(void)
 
 	CModelEffect* pModelEffect = nullptr;
 
-	if (m_bIsMoving && m_bOnGround)
-	{
-		m_particleTimer++;
+	//if (m_bIsMoving && m_bOnGround)
+	//{
+	//	m_particleTimer++;
 
-		if (m_particleTimer >= DASH_PARTICLE_INTERVAL)
-		{
-			m_particleTimer = 0;
+	//	if (m_particleTimer >= DASH_PARTICLE_INTERVAL)
+	//	{
+	//		m_particleTimer = 0;
 
-			// ランダムな角度で横に広がる
-			float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
-			float speed = (rand() % 150) / 300.0f + 0.2f;
+	//		// ランダムな角度で横に広がる
+	//		float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
+	//		float speed = (rand() % 150) / 300.0f + 0.2f;
 
-			// 移動量
-			D3DXVECTOR3 move;
-			move.x = cosf(angle) * speed;
-			move.z = sinf(angle) * speed;
-			move.y = (rand() % 80) / 50.0f + 0.05f; // 少しだけ上方向
+	//		// 移動量
+	//		D3DXVECTOR3 move;
+	//		move.x = cosf(angle) * speed;
+	//		move.z = sinf(angle) * speed;
+	//		move.y = (rand() % 80) / 50.0f + 0.05f; // 少しだけ上方向
 
-			// 向き
-			D3DXVECTOR3 rot;
-			rot.x = ((rand() % 360) / 180.0f) * D3DX_PI;
-			rot.y = ((rand() % 360) / 180.0f) * D3DX_PI;
-			rot.z = ((rand() % 360) / 180.0f) * D3DX_PI;
+	//		// 向き
+	//		D3DXVECTOR3 rot;
+	//		rot.x = ((rand() % 360) / 180.0f) * D3DX_PI;
+	//		rot.y = ((rand() % 360) / 180.0f) * D3DX_PI;
+	//		rot.z = ((rand() % 360) / 180.0f) * D3DX_PI;
 
-			// モデルエフェクトの生成
-			pModelEffect = CModelEffect::Create("data/MODELS/effectModel_step.x", GetPos(), rot,
-				move, D3DXVECTOR3(0.3f, 0.3f, 0.3f), 180, 0.01f, 0.008f);
-		}
-	}
-	else
-	{
-		m_particleTimer = 0; // 停止時はリセット
-	}
+	//		// モデルエフェクトの生成
+	//		pModelEffect = CModelEffect::Create("data/MODELS/effectModel_step.x", GetPos(), rot,
+	//			move, D3DXVECTOR3(0.3f, 0.3f, 0.3f), 180, 0.01f, 0.008f);
+	//	}
+	//}
+	//else
+	//{
+	//	m_particleTimer = 0; // 停止時はリセット
+	//}
 
 	if (m_pShadowS != nullptr)
 	{
@@ -232,10 +255,8 @@ void CPlayer::Update(void)
 		m_pShadowS->SetPosition(GetPos());
 	}
 
-	int nNumModels = 16;
-
 	// モーションの更新処理
-	m_pMotion->Update(m_apModel, nNumModels);
+	m_pMotion->Update(m_apModel, m_nNumModel);
 }
 //=============================================================================
 // 描画処理

@@ -35,7 +35,6 @@ public:
 
 private:
 	static CTime* m_pTime;					// タイムへのポインタ
-	static CColon* m_pColon;				// コロンへのポインタ
 	static int m_nClearMinutes;				// クリアタイム(分)
 	static int m_nClearSeconds;				// クリアタイム(秒)
 	static bool m_isTreasureGet;			// 秘宝を入手したか

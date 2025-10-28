@@ -1,66 +1,66 @@
 //=============================================================================
 //
-// タイム処理 [time.h]
+// ランキングタイム処理 [ranktime.h]
 // Author : RIKU TANEKAWA
 //
 //=============================================================================
-#ifndef _TIME_H_// このマクロ定義がされていなかったら
-#define _TIME_H_// 2重インクルード防止のマクロ定義
+#ifndef _RANKTIME_H_// このマクロ定義がされていなかったら
+#define _RANKTIME_H_// 2重インクルード防止のマクロ定義
 
 //*****************************************************************************
 // インクルードファイル
 //*****************************************************************************
 #include "object.h"
 #include "number.h"
-
+#include "rankingmanager.h"
+#include "time.h"
 
 // 前方宣言
-class CColon;
+class CRankColon;
 
 //*****************************************************************************
-// タイムクラス
+// ランキングタイムクラス
 //*****************************************************************************
-class CTime : public CObject
+class CRankTime : public CObject
 {
 public:
-	CTime(int nPriority = 7);
-	~CTime();
+	CRankTime(int nPriority = 7);
+	~CRankTime();
 
-	static CTime* Create(int minutes, int seconds, float baseX, float baseY, float digitWidth, float digitHeight);
+	static CRankTime* Create(float baseX, float baseY, float digitWidth, float digitHeight);
 	HRESULT Init(void);
 	void Uninit(void);
 	void Update(void);
-	void Countup(void);
-	void Countdown(void);
 	void Draw(void);
+	void SetRankList(const std::vector<std::pair<int, int>>& rankList);
+
 	D3DXVECTOR3 GetPos(void);
-	int GetMinutes(void) { return m_nMinutes; }
-	int GetnSeconds(void) { return m_nSeconds; }
 
 private:
-	static const int DIGITS = 4;
-	CNumber* m_apNumber[DIGITS];
+	static constexpr int MaxRanking = 5;	// 表示数
+	static constexpr int DIGITS = 4;
+	CNumber* m_apNumber[MaxRanking][DIGITS];// ナンバーへのポインタ
 	int m_nMinutes;							// 分
 	int m_nSeconds;							// 秒
 	int m_nFrameCount;						// フレームカウント
 	float m_digitWidth;						// 数字1桁あたりの幅
 	float m_digitHeight;					// 数字1桁あたりの高さ
 	D3DXVECTOR3 m_basePos;					// 表示の開始位置
-	CColon* m_pColon;						// コロンへのポインタ
+	CRankColon* m_apRankClon[MaxRanking];	// コロンへのポインタ
 	int m_nIdxTexture;						// テクスチャインデックス
 
 };
 
 //*****************************************************************************
-// コロンクラス
+// ランキングコロンクラス
 //*****************************************************************************
-class CColon : public CObject
+class CRankColon : public CObject
 {
 public:
-	CColon(int nPriority = 7);
-	~CColon();
+	CRankColon(int nPriority = 7);
+	~CRankColon();
 
-	static CColon* Create(D3DXVECTOR3 pos, float fWidth, float fHeight);
+	static CRankColon* Create(D3DXVECTOR3 pos, float fWidth, float fHeight);
 	HRESULT Init(void);
 	void Uninit(void);
 	void Update(void);
@@ -72,7 +72,6 @@ private:
 	D3DXVECTOR3 m_pos;						// 位置
 	float m_fWidth, m_fHeight;				// サイズ（幅・高さ）
 	int m_nIdxTexture;						// テクスチャインデックス
-
 };
 
 #endif

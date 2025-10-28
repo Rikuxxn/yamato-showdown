@@ -1,34 +1,38 @@
 //=============================================================================
 //
-// 草処理 [grass.h]
+// ランキング処理 [ranking.h]
 // Author : RIKU TANEKAWA
 //
 //=============================================================================
-#ifndef _GRASS_H_
-#define _GRASS_H_
+#ifndef _RANKING_H_// このマクロ定義がされていなかったら
+#define _RANKING_H_// 2重インクルード防止のマクロ定義
 
 //*****************************************************************************
 // インクルードファイル
 //*****************************************************************************
-#include "object3D.h"
-#include "block.h"
+#include "scene.h"
+#include "rankingmanager.h"
+#include "ranktime.h"
 
 //*****************************************************************************
-// 草クラス
+// ランキングクラス
 //*****************************************************************************
-class CGrassBlock : public CBlock
+class CRanking : public CScene
 {
 public:
-	CGrassBlock(int nPriority = 5);
-	~CGrassBlock();
+	CRanking();
+	~CRanking();
 
+	HRESULT Init(void);
+	void Uninit(void);
 	void Update(void);
 	void Draw(void);
 
-	int GetCollisionFlags(void) const override { return btCollisionObject::CF_NO_CONTACT_RESPONSE; }
-
 private:
-	D3DXVECTOR3 m_rotVel; // 角速度
+	CRankTime* m_pRankTime;            // クリアタイムランキング表示用
+	CRankingManager* m_pRankingManager;// ランキングへのポインタ
 };
 
+
 #endif
+

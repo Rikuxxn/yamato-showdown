@@ -46,20 +46,18 @@ public:
 	//*****************************************************************************
 	// setter関数
 	//*****************************************************************************
-	void SetMove(D3DXVECTOR3 move) { m_move = move; }
+
 
 	//*****************************************************************************
 	// getter関数
 	//*****************************************************************************
 	CMotion* GetMotion(void) { return m_pMotion; }
-	D3DXVECTOR3 GetMove(void) const { return m_move; }
 
 private:
 	static constexpr int MAX_PARTS = 32;	// 最大パーツ数
 	static constexpr float CAPSULE_RADIUS = 14.0f;					// カプセルコライダーの半径
 	static constexpr float CAPSULE_HEIGHT = 60.0f;					// カプセルコライダーの高さ
 
-	D3DXVECTOR3 m_move;						// 移動量
 	D3DXMATRIX m_mtxWorld;					// ワールドマトリックス
 	CModel* m_apModel[MAX_PARTS];			// モデル(パーツ)へのポインタ
 	CShadowS* m_pShadowS;					// ステンシルシャドウへのポインタ
@@ -86,7 +84,7 @@ public:
 		pEnemy->GetMotion()->StartBlendMotion(CEnemy::NEUTRAL, 10);
 	}
 
-	void OnUpdate(CEnemy* pEnemy)override
+	void OnUpdate(CEnemy* /*pEnemy*/)override
 	{
 		//// 攻撃状態1へ移行
 		//m_pMachine->ChangeState<CEnemy_AttackState1>();
