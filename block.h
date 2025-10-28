@@ -14,17 +14,15 @@
 #include "debugproc3D.h"
 #include <unordered_map>
 #include <functional>
+#include "json.hpp"
 
 // 前方宣言
 class CBlock;
 
 using BlockCreateFunc = std::function<CBlock* ()>;
 
-struct ColliderPart
-{
-	D3DXVECTOR3 size;
-	D3DXVECTOR3 offset;
-};
+// JSONの使用
+using json = nlohmann::json;
 
 //*****************************************************************************
 // ブロッククラス
@@ -71,6 +69,38 @@ public:
 	void DrawCollider(void);
 	void ReleasePhysics(void);															// Physics破棄用
 	virtual void Respawn(D3DXVECTOR3 resPos);
+	virtual void DrawCustomUI(void) {}													// 派生クラスのGUI特殊処理用
+
+	virtual void SaveToJson(json& b)
+	{
+		D3DXVECTOR3 degRot = D3DXToDegree(GetRot());
+		b["type"] = m_Type;
+		b["pos"] = { GetPos().x, GetPos().y, GetPos().z };
+		b["rot"] = { degRot.x, degRot.y, degRot.z };
+		b["size"] = { GetSize().x, GetSize().y, GetSize().z };
+		b["collider_size"] = { m_colliderSize.x, m_colliderSize.y, m_colliderSize.z };
+	}
+
+	virtual void LoadFromJson(const json& b)
+	{
+		D3DXVECTOR3 pos(b["pos"][0], b["pos"][1], b["pos"][2]);
+		D3DXVECTOR3 degRot(b["rot"][0], b["rot"][1], b["rot"][2]);
+		D3DXVECTOR3 size(b["size"][0], b["size"][1], b["size"][2]);
+
+		SetPos(pos);
+		SetRot(D3DXToRadian(degRot));
+		SetSize(size);
+
+		if (b.contains("collider_size"))
+		{
+			D3DXVECTOR3 collider(
+				b["collider_size"][0],
+				b["collider_size"][1],
+				b["collider_size"][2]);
+			SetColliderSize(collider);
+			UpdateCollider();
+		}
+	}
 
 	//*****************************************************************************
 	// flagment関数

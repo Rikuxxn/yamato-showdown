@@ -441,6 +441,11 @@ InputData CPlayer::GatherInput(void)
 	CCamera* pCamera = CManager::GetCamera();					// ƒJƒƒ‰‚Ìæ“¾
 	D3DXVECTOR3 CamRot = pCamera->GetRot();						// ƒJƒƒ‰Šp“x‚Ìæ“¾
 
+	if (CGame::GetEnemy()->IsDead())
+	{
+		return input;
+	}
+
 	// ---------------------------
 	// UŒ‚“ü—Í
 	// ---------------------------

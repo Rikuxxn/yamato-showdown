@@ -61,13 +61,34 @@ public:
     //*****************************************************************************
     bool GetUpdateCollider(void) { return m_autoUpdateColliderSize; }
     static const char* GetFilePathFromType(CBlock::TYPE type);
-    static std::vector<CBlock*>& GetAllBlocks(void);
+    static std::vector<CBlock*>& GetAllBlocks(void) { return m_blocks; }
     int GetSelectedIdx(void) { return m_selectedIdx; }
     int GetPrevSelectedIdx(void) { return m_prevSelectedIdx; }
     static CBlock* GetSelectedBlock(void) { return m_selectedBlock; }
 
+    // 特定のタイプのブロックを取得
+    static const std::vector<CBlock*>& GetBlocksByType(CBlock::TYPE type)
+    {
+        return m_blocksByType[type]; // 存在しない場合は空vectorが返る
+    }
+
+    // --- 特定の型をまとめて取得するテンプレート関数 ---
+    template<typename T>
+    static std::vector<T*> GetBlocksOfType(void)
+    {
+        std::vector<T*> result;
+        CBlock::TYPE type = T::GetStaticType(); // 各クラスにstatic TYPE定義
+        for (CBlock* block : m_blocksByType[type])
+        {
+            result.push_back(static_cast<T*>(block));
+        }
+
+        return result;
+    }
+
 private:
     static std::vector<CBlock*> m_blocks;   // ブロック情報
+    static std::unordered_map<CBlock::TYPE, std::vector<CBlock*>> m_blocksByType;
     static CBlock* m_draggingBlock;         // ドラッグ中のブロック情報
     static int m_selectedIdx;               // 選択中のインデックス
     int m_prevSelectedIdx;                  // 前回の選択中のインデックス

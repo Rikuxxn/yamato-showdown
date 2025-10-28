@@ -25,6 +25,7 @@ using json = nlohmann::json;
 // 静的メンバ変数宣言
 //*****************************************************************************
 std::vector<CBlock*> CBlockManager::m_blocks = {};	// ブロックの情報
+std::unordered_map<CBlock::TYPE, std::vector<CBlock*>> CBlockManager::m_blocksByType;
 int CBlockManager::m_selectedIdx = 0;				// 選択中のインデックス
 CBlock* CBlockManager::m_draggingBlock = {};		// ドラッグ中のブロック
 std::unordered_map<CBlock::TYPE, std::string> CBlockManager::s_FilePathMap; 
@@ -61,7 +62,11 @@ CBlock* CBlockManager::CreateBlock(CBlock::TYPE type, D3DXVECTOR3 pos)
 
 	if (newBlock)
 	{
+		// 全体のリストに追加
 		m_blocks.push_back(newBlock);
+
+		// タイプ別キャッシュにも追加
+		m_blocksByType[type].push_back(newBlock);
 	}
 
 	return newBlock;
@@ -619,6 +624,11 @@ void CBlockManager::UpdateTransform(CBlock* selectedBlock)
 		// サイズ変更チェック
 		bool isSizeChanged = (size != prevSize);
 
+		ImGui::Dummy(ImVec2(0.0f, 10.0f)); // 空白を空ける
+
+		// ブロックの特殊処理
+		selectedBlock->DrawCustomUI();
+
 		//*********************************************************************
 		// 質量 の調整
 		//*********************************************************************
@@ -681,13 +691,6 @@ void CBlockManager::UpdateTransform(CBlock* selectedBlock)
 				}
 				selectedBlock->GetRigidBody()->setWorldTransform(transform);
 				selectedBlock->GetRigidBody()->getMotionState()->setWorldTransform(transform);
-			}
-
-			// シーソーブロックならヒンジ軸も更新
-			if (auto seesaw = dynamic_cast<CSeesawBlock*>(selectedBlock))
-			{
-				seesaw->RemoveHinge();  // 既存ヒンジ削除
-				seesaw->SetHinge();     // 新しい回転に合わせてヒンジ作成
 			}
 		}
 		else
@@ -1247,21 +1250,8 @@ void CBlockManager::SaveToJson(const char* filename)
 	// 1つづつJSON化
 	for (const auto& block : m_blocks)
 	{
-		// ラジアン→角度に一時変換
-		D3DXVECTOR3 degRot = D3DXToDegree(block->GetRot());
-		
 		json b;
-		b["type"] = block->GetType();												// ブロックのタイプ
-		b["pos"] = { block->GetPos().x, block->GetPos().y, block->GetPos().z };		// 位置
-		b["rot"] = { degRot.x, degRot.y, degRot.z };								// 向き
-		b["size"] = { block->GetSize().x, block->GetSize().y, block->GetSize().z };	// サイズ
-
-		b["collider_size"] =
-		{
-			block->GetColliderSize().x,
-			block->GetColliderSize().y,
-			block->GetColliderSize().z
-		};
+		block->SaveToJson(b);
 
 		// 追加
 		j.push_back(b);
@@ -1312,17 +1302,10 @@ void CBlockManager::LoadFromJson(const char* filename)
 	// 新たに生成
 	for (const auto& b : j)
 	{
-		// タイプ情報を取得して列挙型にキャスト
-		CBlock::TYPE typeInt = b["type"];
-		CBlock::TYPE type = typeInt;
-
+		CBlock::TYPE type = b["type"];
 		D3DXVECTOR3 pos(b["pos"][0], b["pos"][1], b["pos"][2]);
-		D3DXVECTOR3 degRot(b["rot"][0], b["rot"][1], b["rot"][2]);
-		D3DXVECTOR3 size(b["size"][0], b["size"][1], b["size"][2]);
 
-		D3DXVECTOR3 rot = D3DXToRadian(degRot); // 度→ラジアンに変換
-
-		// タイプからブロック生成
+		// ブロックの生成
 		CBlock* block = CreateBlock(type, pos);
 
 		if (!block)
@@ -1330,25 +1313,6 @@ void CBlockManager::LoadFromJson(const char* filename)
 			continue;
 		}
 
-		block->SetRot(rot);
-		block->SetSize(size);
-
-		if (b.contains("collider_size"))
-		{
-			D3DXVECTOR3 colliderSize(
-				b["collider_size"][0],
-				b["collider_size"][1],
-				b["collider_size"][2]);
-
-			block->SetColliderSize(colliderSize);
-			block->UpdateCollider(); // 単一用再生成
-		}
+		block->LoadFromJson(b);
 	}
-}
-//=============================================================================
-// 全ブロックの取得
-//=============================================================================
-std::vector<CBlock*>& CBlockManager::GetAllBlocks(void)
-{
-	return m_blocks;
 }
