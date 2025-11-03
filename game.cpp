@@ -14,6 +14,7 @@
 #include "particle.h"
 #include "charactermanager.h"
 #include "player.h"
+#include "enemy.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
@@ -80,7 +81,7 @@ HRESULT CGame::Init(void)
 	characterManager.AddCharacter(m_pPlayer);
 
 	// 敵の生成
-	m_pEnemy = CEnemy::Create(D3DXVECTOR3(0.0f, 200.0f, 300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	m_pEnemy = CEnemy::Create(D3DXVECTOR3(0.0f, 130.0f, 300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	characterManager.AddCharacter(m_pEnemy);
 
 	m_nSeed = (int)time(nullptr);  // シード値をランダム設定
@@ -151,6 +152,8 @@ void CGame::Update(void)
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
 	CInputJoypad* pJoypad = CManager::GetInputJoypad();
 
+	UpdateLight();
+
 	// TABキーでポーズON/OFF
 	if (pKeyboard->GetTrigger(DIK_TAB) || pJoypad->GetTrigger(CInputJoypad::JOYKEY_START))
 	{
@@ -202,6 +205,12 @@ void CGame::Update(void)
 		// リザルト画面に移行
 		pFade->SetFade(MODE_RESULT);
 	}
+	else if (pFade->GetFade() == CFade::FADE_NONE && m_pTime->IsTimeUp())
+	{// 時間切れ
+
+		// リザルト画面に移行
+		pFade->SetFade(MODE_RESULT);
+	}
 
 #ifdef _DEBUG
 	CInputKeyboard* pInputKeyboard = CManager::GetInputKeyboard();
@@ -218,6 +227,99 @@ void CGame::Update(void)
 		pFade->SetFade(MODE_RESULT);
 	}
 #endif
+}
+//=============================================================================
+// ライトの色更新処理
+//=============================================================================
+void CGame::UpdateLight(void)
+{
+	float progress = m_pTime->GetProgress(); // 0.0～0.1
+
+// ======== 各時間帯のメインライト色 ========
+	D3DXCOLOR evening(1.0f, 0.65f, 0.35f, 1.0f); // 夕日：濃いオレンジ
+	D3DXCOLOR night(0.15f, 0.18f, 0.35f, 1.0f);  // 夜：青みが強く暗い（でも完全には黒くしない）
+	D3DXCOLOR morning(0.95f, 0.8f, 0.7f, 1.0f);  // 明け方：柔らかいピンクベージュ
+
+	D3DXCOLOR mainColor;
+
+	// ======== 時間帯ごとに補間 ========
+	if (progress < 0.33f)
+	{// 夕方
+		float t = progress / 0.33f;
+		D3DXColorLerp(&mainColor, &evening, &night, t);
+	}
+	else if (progress < 0.66f)
+	{// 夜
+		float t = (progress - 0.33f) / 0.33f;
+		D3DXColorLerp(&mainColor, &night, &morning, t);
+	}
+	else
+	{// 明け方
+		float t = (progress - 0.66f) / 0.34f;
+		D3DXColorLerp(&mainColor, &morning, &evening, t); // 少し戻すとループっぽく自然
+	}
+
+	// ======== 光の向き補間 ========
+	D3DXVECTOR3 dirEvening(0.5f, -1.0f, 0.3f);
+	D3DXVECTOR3 dirNight(0.0f, -1.0f, 0.0f);
+	D3DXVECTOR3 dirMorning(-0.3f, -1.0f, -0.2f);
+	D3DXVECTOR3 mainDir;
+
+	if (progress < 0.5f)
+	{
+		float t = progress / 0.5f;
+		D3DXVec3Lerp(&mainDir, &dirEvening, &dirNight, t);
+	}
+	else
+	{
+		float t = (progress - 0.5f) / 0.5f;
+		D3DXVec3Lerp(&mainDir, &dirNight, &dirMorning, t);
+	}
+	D3DXVec3Normalize(&mainDir, &mainDir);
+
+	// 再設定
+	CLight::Uninit();
+
+	// メインライト（太陽・月相当）
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		mainColor,
+		mainDir,
+		D3DXVECTOR3(0.0f, 300.0f, 0.0f)
+	);
+
+	// サブライト（空の反射光）も時間帯で変化
+	D3DXCOLOR skyEvening(0.4f, 0.45f, 0.8f, 1.0f);
+	D3DXCOLOR skyNight(0.1f, 0.15f, 0.3f, 1.0f);
+	D3DXCOLOR skyMorning(0.6f, 0.7f, 1.0f, 1.0f);
+	D3DXCOLOR skyColor;
+
+	if (progress < 0.5f)
+	{
+		D3DXColorLerp(&skyColor, &skyEvening, &skyNight, progress / 0.5f);
+	}
+	else
+	{
+		D3DXColorLerp(&skyColor, &skyNight, &skyMorning, (progress - 0.5f) / 0.5f);
+	}
+
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		skyColor,
+		D3DXVECTOR3(0.0f, -1.0f, 0.0f),
+		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
+	);
+
+	// 補助光：ほんのり赤み（朝夕）を残す
+	float warmFactor = 1.0f - fabs(progress - 0.5f) * 2.0f; // 夕・朝で強め
+	warmFactor = max(0.0f, warmFactor);
+
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		D3DXCOLOR(0.5f + 0.2f * warmFactor, 0.3f, 0.25f, 1.0f),
+		D3DXVECTOR3(-0.3f, 0.0f, -0.7f),
+		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
+	);
 }
 //=============================================================================
 // 描画処理
@@ -287,8 +389,10 @@ void CGame::ResetLight(void)
 //=============================================================================
 void CGame::OnDeviceReset(void)
 {
-	// ライトの再設定処理
-	ResetLight();
+	//// ライトの再設定処理
+	//ResetLight();
+
+	UpdateLight();
 }
 //=============================================================================
 // ポーズの設定

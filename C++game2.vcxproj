@@ -170,6 +170,7 @@
     <ClCompile Include="debugproc3D.cpp" />
     <ClCompile Include="effect.cpp" />
     <ClCompile Include="enemy.cpp" />
+    <ClCompile Include="enemyAI.cpp" />
     <ClCompile Include="fade.cpp" />
     <ClCompile Include="FileDialogUtils.cpp" />
     <ClCompile Include="game.cpp" />
@@ -239,6 +240,7 @@
     <ClInclude Include="easing.h" />
     <ClInclude Include="effect.h" />
     <ClInclude Include="enemy.h" />
+    <ClInclude Include="enemyAI.h" />
     <ClInclude Include="fade.h" />
     <ClInclude Include="FileDialogUtils.h" />
     <ClInclude Include="game.h" />

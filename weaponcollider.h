@@ -10,8 +10,11 @@
 //*****************************************************************************
 // インクルードファイル
 //*****************************************************************************
-#include "enemy.h"
 #include "collisionUtils.h"
+#include "model.h"
+
+class CEnemy;
+class CPlayer;
 
 //*****************************************************************************
 // 武器コライダークラス
@@ -24,6 +27,7 @@ public:
 
     void SetActive(bool active) { m_bActive = active; }
     bool IsActive(void) const { return m_bActive; }
+    bool IsHit(void) { return m_bHasHit; }
     void ResetHit(void) { m_bHasHit = false; }
     void ResetPrevPos(void) { m_prevTip = m_currTip; m_prevBase = m_currBase; }
 
@@ -31,14 +35,14 @@ public:
     D3DXVECTOR3 GetCurrentTipPos(void) { return m_currTip; }
 
     // 当たり判定の更新処理
-    void Update(CModel* pWeapon)
+    void Update(CModel* pWeapon, float tip, float base)
     {
         // 親子階層込みのワールド行列を取得
         D3DXMATRIX worldMatrix = pWeapon->GetMtxWorld();
 
         // 刀の根元と先端オフセット（ローカル座標）
-        D3DXVECTOR3 localTip(0, 40, 0); // 先端
-        D3DXVECTOR3 localBase(0, 10, 0); // 根元
+        D3DXVECTOR3 localTip(0, tip, 0); // 先端
+        D3DXVECTOR3 localBase(0, base, 0); // 根元
 
         // ローカル→ワールド変換
         D3DXVec3TransformCoord(&m_currTip, &localTip, &worldMatrix);
@@ -46,33 +50,8 @@ public:
     }
 
     // 当たり判定処理
-    void CheckHit(CEnemy* pEnemy)
-    {
-        if (!m_bActive || m_bHasHit || !pEnemy)
-        {
-            return;
-        }
-
-        // カプセルの上下端点
-        D3DXVECTOR3 top = pEnemy->GetPos() + D3DXVECTOR3(0, pEnemy->GetHeight() * 0.5f, 0);
-        D3DXVECTOR3 bottom = pEnemy->GetPos() - D3DXVECTOR3(0, pEnemy->GetHeight() * 0.5f, 0);
-        float radius = pEnemy->GetRadius();
-
-        float weaponRadius = 15.0f; // 当たり判定の半径
-
-        if (CCollision::IntersectSegmentCapsule(m_prevBase, m_currBase, bottom, top, radius + weaponRadius) ||
-            CCollision::IntersectSegmentCapsule(m_prevTip, m_currTip, bottom, top, radius + weaponRadius) ||
-            CCollision::IntersectSegmentCapsule(m_prevBase, m_currTip, bottom, top, radius + weaponRadius))
-        {
-            // ダメージ処理
-            pEnemy->Damage(5.0f);
-            m_bHasHit = true; // 当たった
-        }
-
-        // 座標更新
-        m_prevBase = m_currBase;
-        m_prevTip = m_currTip;
-    }
+    void CheckHit(CEnemy* pEnemy);
+    void CheckHit(CPlayer* pPlayer);
 
 private:
     D3DXVECTOR3 m_prevBase;

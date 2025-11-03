@@ -26,7 +26,6 @@ public:
 	HRESULT Init(void);
 	void Update(void);
 	void Respawn(D3DXVECTOR3 resPos) override;
-	void Set(D3DXVECTOR3 pos);
 
 	bool IsDynamicBlock(void) const override { return true; }
 	btVector3 GetAngularFactor(void) const { return btVector3(1.0f, 1.0f, 1.0f); }

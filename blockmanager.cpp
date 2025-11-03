@@ -242,8 +242,11 @@ void CBlockManager::GenerateThumbnailsForResources(void)
 			continue;
 		}
 
-		// サムネイル作成
-		m_thumbnailTextures[i] = RenderThumbnail(pTemp);
+		if (!m_thumbnailTextures[i])
+		{
+			// サムネイル作成
+			m_thumbnailTextures[i] = RenderThumbnail(pTemp);
+		}
 
 		pTemp->Kill();                 // 削除フラグを立てる
 		CleanupDeadBlocks();           // 配列から取り除き、メモリ解放
@@ -1025,7 +1028,7 @@ void CBlockManager::GenerateRandomMap(int seed)
 			// 外周に近いなら「茂み」、内側なら「灯籠 or 何もなし」
 			float distFromCenterX = fabsf(pos.x);
 			float distFromCenterZ = fabsf(pos.z);
-			float halfWidth = (GRID_X * AREA_SIZE) / 2.0f * 0.9f; // 外周判定閾値
+			float halfWidth = (GRID_X * AREA_SIZE) / 2.0f * 0.5f; // 外周判定閾値
 
 			CBlock::TYPE type = CBlock::TYPE_GRASS; // デフォルトは茂み
 
@@ -1033,7 +1036,7 @@ void CBlockManager::GenerateRandomMap(int seed)
 			if (distFromCenterX > halfWidth * 0.6f || distFromCenterZ > halfWidth * 0.6f)
 			{
 				// 草を連続配置
-				int grassLength = 2 + rand() % 5; // 1～3マス
+				int grassLength = 2 + rand() % 5;
 				bool horizontal = rand() % 2;    // X方向かZ方向かランダム
 
 				float minX = offsetX;

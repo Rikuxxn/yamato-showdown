@@ -229,6 +229,16 @@ void CMotion::LoadMotionSet(FILE* pFile, char* aString, CMotion* pMotion, int& n
 			break;
 		}
 
+		// ループ情報
+		if (strcmp(aString, "LOOP") == 0)
+		{
+			fscanf(pFile, "%s", aString); // "="
+			int nLoop = 0;
+			fscanf(pFile, "%d", &nLoop);
+			pMotion->m_aMotionInfo[nCntMotion].bLoop = (nLoop != 0); // 0ならfalse、1ならtrue
+			continue;
+		}
+
 		if (strcmp(aString, "NUM_KEY") != 0)
 		{
 			continue;
@@ -306,180 +316,109 @@ void CMotion::LoadMotionSet(FILE* pFile, char* aString, CMotion* pMotion, int& n
 	}
 }
 //=============================================================================
+// キーカウンター更新
+//=============================================================================
+void CMotion::AdvanceKeyCounter(int motionType, int& nKey, int& nCounter, bool bLoop)
+{
+	nCounter++;
+	if (nCounter >= m_aMotionInfo[motionType].aKeyInfo[nKey].nFrame)
+	{
+		nCounter = 0;
+		nKey++;
+		if (nKey >= m_aMotionInfo[motionType].nNumKey)
+		{
+			if (bLoop)
+				nKey = 0;
+			else
+				nKey = m_aMotionInfo[motionType].nNumKey - 1;
+		}
+	}
+}
+
+//=============================================================================
 // 更新処理
 //=============================================================================
 void CMotion::Update(CModel** pModel, int& nNumModel)
 {
-	// ブレンド中かどうか
-	if (m_bBlendMotion && m_nFrameBlend > 0 && m_nCounterBlend < m_nFrameBlend)
+	if (m_bBlendMotion && m_nFrameBlend > 0)
 	{
 		// ブレンド進行度
 		float blendRate = (float)m_nCounterBlend / (float)m_nFrameBlend;
 
-		for (int nCntModel = 0; nCntModel < nNumModel; nCntModel++)
+		for (int i = 0; i < nNumModel; i++)
 		{
-			// 現在モーションの補間結果
-			int nNextKey = (m_nKey + 1) % m_aMotionInfo[m_motionType].nNumKey;
+			// 現在モーション
+			int nextKey = (m_nKey + 1) % m_aMotionInfo[m_motionType].nNumKey;
 
-			float tCurrent = (float)m_nCounterMotion / m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].nFrame;
+			float tCur = (float)m_nCounterMotion / m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].nFrame;
+			D3DXVECTOR3 posCurrent = LerpPos(m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[i],
+				m_aMotionInfo[m_motionType].aKeyInfo[nextKey].aKey[i], tCur);
+			D3DXVECTOR3 rotCurrent = LerpRot(m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[i],
+				m_aMotionInfo[m_motionType].aKeyInfo[nextKey].aKey[i], tCur);
 
-			KEY keyCur = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel];
-			KEY keyNext = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel];
+			// ブレンド先モーション
+			int nextKeyBlend = (m_nKeyBlend + 1) % m_aMotionInfo[m_motionTypeBlend].nNumKey;
 
-			D3DXVECTOR3 posCurrent =
-			{
-				keyCur.fPosX + (keyNext.fPosX - keyCur.fPosX) * tCurrent,
-				keyCur.fPosY + (keyNext.fPosY - keyCur.fPosY) * tCurrent,
-				keyCur.fPosZ + (keyNext.fPosZ - keyCur.fPosZ) * tCurrent,
-			};
-
-			D3DXVECTOR3 rotCurrent =
-			{
-				keyCur.fRotX + (keyNext.fRotX - keyCur.fRotX) * tCurrent,
-				keyCur.fRotY + (keyNext.fRotY - keyCur.fRotY) * tCurrent,
-				keyCur.fRotZ + (keyNext.fRotZ - keyCur.fRotZ) * tCurrent,
-			};
-
-			// 正規化
-			NormalizeRotX(rotCurrent);
-			NormalizeRotY(rotCurrent);
-			NormalizeRotZ(rotCurrent);
-
-			// ブレンドモーションの補間結果
-			int nNextKeyBlend = (m_nKeyBlend + 1) % m_aMotionInfo[m_motionTypeBlend].nNumKey;
 			float tBlend = (float)m_nCounterMotionBlend / m_aMotionInfo[m_motionTypeBlend].aKeyInfo[m_nKeyBlend].nFrame;
+			D3DXVECTOR3 posBlend = LerpPos(m_aMotionInfo[m_motionTypeBlend].aKeyInfo[m_nKeyBlend].aKey[i],
+				m_aMotionInfo[m_motionTypeBlend].aKeyInfo[nextKeyBlend].aKey[i], tBlend);
+			D3DXVECTOR3 rotBlend = LerpRot(m_aMotionInfo[m_motionTypeBlend].aKeyInfo[m_nKeyBlend].aKey[i],
+				m_aMotionInfo[m_motionTypeBlend].aKeyInfo[nextKeyBlend].aKey[i], tBlend);
 
-			KEY keyCurBlend = m_aMotionInfo[m_motionTypeBlend].aKeyInfo[m_nKeyBlend].aKey[nCntModel];
-			KEY keyNextBlend = m_aMotionInfo[m_motionTypeBlend].aKeyInfo[nNextKeyBlend].aKey[nCntModel];
-
-			D3DXVECTOR3 posBlend = 
-			{
-				keyCurBlend.fPosX + (keyNextBlend.fPosX - keyCurBlend.fPosX) * tBlend,
-				keyCurBlend.fPosY + (keyNextBlend.fPosY - keyCurBlend.fPosY) * tBlend,
-				keyCurBlend.fPosZ + (keyNextBlend.fPosZ - keyCurBlend.fPosZ) * tBlend,
-			};
-
-			D3DXVECTOR3 rotBlend =
-			{
-				keyCurBlend.fRotX + (keyNextBlend.fRotX - keyCurBlend.fRotX) * tBlend,
-				keyCurBlend.fRotY + (keyNextBlend.fRotY - keyCurBlend.fRotY) * tBlend,
-				keyCurBlend.fRotZ + (keyNextBlend.fRotZ - keyCurBlend.fRotZ) * tBlend,
-			};
-
-			// 最終的に現在モーションとブレンドモーションをさらに補間
+			// ブレンド合成
 			D3DXVECTOR3 posFinal = posCurrent * (1.0f - blendRate) + posBlend * blendRate;
 			D3DXVECTOR3 rotFinal = rotCurrent * (1.0f - blendRate) + rotBlend * blendRate;
 
-			// 全パーツの位置・向きを設定
-			pModel[nCntModel]->SetOffsetPos(posFinal);
-			pModel[nCntModel]->SetOffsetRot(rotFinal);
+			pModel[i]->SetOffsetPos(posFinal);
+			pModel[i]->SetOffsetRot(rotFinal);
 		}
 
-		// モーションカウンター進行
-		m_nCounterMotion++;
-		if (m_nCounterMotion >= m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].nFrame)
-		{
-			m_nCounterMotion = 0;
-			m_nKey++;
+		// カウンター進行
+		AdvanceKeyCounter(m_motionType, m_nKey, m_nCounterMotion, m_aMotionInfo[m_motionType].bLoop);
+		AdvanceKeyCounter(m_motionTypeBlend, m_nKeyBlend, m_nCounterMotionBlend, m_aMotionInfo[m_motionTypeBlend].bLoop);
 
-			if (m_nKey >= m_aMotionInfo[m_motionType].nNumKey)
-			{
-				m_nKey = 0;
-
-				//m_bFinishMotion = true;
-			}
-		}
-
-		// モーションブレンドカウンター進行
-		m_nCounterMotionBlend++;
-		if (m_nCounterMotionBlend >= m_aMotionInfo[m_motionTypeBlend].aKeyInfo[m_nKeyBlend].nFrame)
-		{
-			m_nCounterMotionBlend = 0;
-			m_nKeyBlend++;
-
-			if (m_nKeyBlend >= m_aMotionInfo[m_motionTypeBlend].nNumKey)
-			{
-				m_nKeyBlend = 0;
-
-				//m_bFinishMotion = true;
-			}
-		}
-
+		// ブレンド進行
 		m_nCounterBlend++;
-
-		// ブレンド終了判定
 		if (m_nCounterBlend >= m_nFrameBlend)
 		{
-			// ブレンド終了。ターゲットモーションへ切り替え
+			// ブレンド終了
 			m_motionType = m_motionTypeBlend;
 			m_nKey = m_nKeyBlend;
 			m_nCounterMotion = m_nCounterMotionBlend;
-
 			m_bBlendMotion = false;
-
-			m_bFinishMotion = false;
 		}
 	}
 	else
 	{
-		// ブレンド無しの通常モーション更新
-		for (int nCntModel = 0; nCntModel < nNumModel; nCntModel++)
+		// 通常モーション
+		for (int i = 0; i < nNumModel; i++)
 		{
-			int nNextKey = (m_nKey + 1) % m_aMotionInfo[m_motionType].nNumKey;
+			int nextKey = (m_nKey + 1 >= m_aMotionInfo[m_motionType].nNumKey) ?
+				(m_aMotionInfo[m_motionType].bLoop ? 0 : m_nKey) : m_nKey + 1;
 
-			// 境界チェック
-			if (m_nKey >= m_aMotionInfo[m_motionType].nNumKey || nNextKey >= m_aMotionInfo[m_motionType].nNumKey)
-			{
-				m_nKey = 0;
-			}
-
-			D3DXVECTOR3 Mpos, Mrot;
-			D3DXVECTOR3 MAnswer, MAnswer2;	// 計算結果用変数
-
-			// キー情報から位置・向きを算出
-			Mpos.x = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel].fPosX - m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fPosX;
-			Mpos.y = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel].fPosY - m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fPosY;
-			Mpos.z = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel].fPosZ - m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fPosZ;
-
-			Mrot.x = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel].fRotX - m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fRotX;
-			Mrot.y = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel].fRotY - m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fRotY;
-			Mrot.z = m_aMotionInfo[m_motionType].aKeyInfo[nNextKey].aKey[nCntModel].fRotZ - m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fRotZ;
-
-			// 正規化
-			NormalizeRotX(Mrot);
-			NormalizeRotY(Mrot);
-			NormalizeRotZ(Mrot);
-
-			// 補間係数を計算
 			float t = (float)m_nCounterMotion / m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].nFrame;
 
-			// 求める値
-			MAnswer.x = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fPosX + Mpos.x * t;
-			MAnswer.y = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fPosY + Mpos.y * t;
-			MAnswer.z = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fPosZ + Mpos.z * t;
+			D3DXVECTOR3 pos = LerpPos(m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[i],
+				m_aMotionInfo[m_motionType].aKeyInfo[nextKey].aKey[i], t);
+			D3DXVECTOR3 rot = LerpRot(m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[i],
+				m_aMotionInfo[m_motionType].aKeyInfo[nextKey].aKey[i], t);
 
-			MAnswer2.x = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fRotX + Mrot.x * t;
-			MAnswer2.y = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fRotY + Mrot.y * t;
-			MAnswer2.z = m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].aKey[nCntModel].fRotZ + Mrot.z * t;
-
-			// 全パーツの位置・向きを設定
-			pModel[nCntModel]->SetOffsetPos(MAnswer);
-			pModel[nCntModel]->SetOffsetRot(MAnswer2);
+			pModel[i]->SetOffsetPos(pos);
+			pModel[i]->SetOffsetRot(rot);
 		}
 
-		m_nCounterMotion++;		// 再生フレーム数に達したら現在のキーを1つ進める
+		// カウンター進行
+		AdvanceKeyCounter(m_motionType, m_nKey, m_nCounterMotion, m_aMotionInfo[m_motionType].bLoop);
 
-		if (m_nCounterMotion >= m_aMotionInfo[m_motionType].aKeyInfo[m_nKey].nFrame)
+		// 終了判定（ループしない場合のみ）
+		if (!m_aMotionInfo[m_motionType].bLoop &&
+			m_nKey == m_aMotionInfo[m_motionType].nNumKey - 1)
 		{
-			m_nCounterMotion = 0;
-			m_nKey++;
-
-			if (m_nKey >= m_aMotionInfo[m_motionType].nNumKey)
-			{
-				m_nKey = 0;
-
-				m_bFinishMotion = true;
-			}
+			m_bFinishMotion = true;  // 最後のキーに到達したら終了フラグを立て続ける
+		}
+		else if (m_aMotionInfo[m_motionType].bLoop)
+		{
+			m_bFinishMotion = false; // ループモーションなら常に false
 		}
 	}
 }
@@ -501,9 +440,6 @@ void CMotion::StartBlendMotion(int  motionTypeBlend, int nFrameBlend)
 	// ブレンド先のモーションキー数取得
 	m_nNumKeyBlend = m_aMotionInfo[m_motionTypeBlend].nNumKey;
 
-	// ブレンド先モーションはループ設定とする
-	m_bLoopMotionBlend = false;
-
 	m_bFinishMotion = false;
 }
 //=============================================================================
@@ -517,50 +453,100 @@ void CMotion::SetMotion(int  motionType)
 	m_bFinishMotion = false;
 }
 //=============================================================================
+// 現在のモーション
+//=============================================================================
+bool CMotion::IsCurrentMotion(int motionType) const
+{
+	bool currentMotion = (m_motionType == motionType);
+
+	return currentMotion;
+}
+//=============================================================================
 // モーションの終了判定
 //=============================================================================
 bool CMotion::IsCurrentMotionEnd(int motionType) const
 {
-	// モーションタイプが一致する場合のみ終了判定
-	return (m_motionType == motionType) && m_bFinishMotion;
+// ブレンド中もチェックする場合
+    bool endCurrent = (m_motionType == motionType) && m_bFinishMotion;
+
+    // ブレンド中で、ターゲットが motionType の場合も終了判定
+    if (m_bBlendMotion && m_motionTypeBlend == motionType)
+    {
+        int lastKey = m_aMotionInfo[m_motionTypeBlend].nNumKey - 1;
+        if (!m_aMotionInfo[m_motionTypeBlend].bLoop &&
+            m_nKeyBlend == lastKey)
+        {
+            endCurrent = true;
+        }
+    }
+
+    return endCurrent;
 }
 //=============================================================================
-// 攻撃中かどうか(フレーム)
+// 攻撃中の範囲(フレーム)
 //=============================================================================
-bool CMotion::IsAttacking(int motionType, int keyIndex, int startFrame, int endFrame) const
+bool CMotion::IsAttacking(int motionType, int startKey, int endKey, int startFrame, int endFrame) const
 {
-	if (m_motionType != motionType)
+	// モーションが一致しない or 終了していたら false
+	if (m_motionType != motionType || m_bFinishMotion)
 	{
-		return false; // 指定モーションでない場合は false
+		return false;
 	}
 
-	if (m_bFinishMotion)
+	// 現在のキーが範囲内か
+	if (m_nKey < startKey || m_nKey > endKey)
 	{
-		return false;           // モーション終了なら false
+		return false;
 	}
 
-	if (m_nKey != keyIndex)
+	// 現在のフレームが範囲内か
+	// （開始キーと終了キーが同じなら、startFrame/endFrameを適用）
+	if (m_nKey == startKey && m_nCounterMotion < startFrame)
 	{
-		return false;          // 現在のキーと一致するか
+		return false;
+	}
+	if (m_nKey == endKey && m_nCounterMotion > endFrame)
+	{
+		return false;
 	}
 
-	return m_nCounterMotion >= startFrame && m_nCounterMotion <= endFrame;
+	return true;
 }
 //=============================================================================
-// 単純に攻撃中かどうかを返す（モーションタイプだけで判定）
+// 攻撃中かどうかを返す（モーションタイプだけで判定）
 //=============================================================================
-bool CMotion::IsAttacking(void) const
+bool CMotion::IsAttacking(int motionType) const
 {
-	// 攻撃モーションの種類配列
-	static const int attackMotions[] = { CPlayer::ATTACK_01 };
+	return (m_motionType == motionType);
+}
+//=============================================================================
+// モーション進行率
+//=============================================================================
+float CMotion::GetMotionRate(void) const
+{
+	const MOTION_INFO& info = m_aMotionInfo[m_motionType];
 
-	for (int type : attackMotions)
+	// 全体フレーム数を算出
+	int totalFrame = 0;
+	for (int i = 0; i < info.nNumKey; i++)
 	{
-		if (m_motionType == type)
-		{
-			return true; // 攻撃モーション再生中
-		}
+		totalFrame += info.aKeyInfo[i].nFrame;
 	}
 
-	return false; // 攻撃モーション以外
+	if (totalFrame <= 0)
+	{
+		return 0.0f;
+	}
+
+	// 現在のキーまでの累積フレーム数
+	int currentFrame = 0;
+	for (int i = 0; i < m_nKey; i++)
+	{
+		currentFrame += info.aKeyInfo[i].nFrame;
+	}
+
+	currentFrame += m_nCounterMotion; // 現在キー内の進行も加算
+
+	// 進行率を返す（0.0 ～ 1.0）
+	return (float)currentFrame / (float)totalFrame;
 }

@@ -44,7 +44,7 @@ CCharacter::~CCharacter()
 //=============================================================================
 // 当たり判定の生成処理
 //=============================================================================
-void CCharacter::CreatePhysics(float radius, float height)
+void CCharacter::CreatePhysics(float radius, float height, btScalar mass)
 {
     //*********************************************************************
     // Bullet Physics カプセルコライダーの設定
@@ -64,7 +64,6 @@ void CCharacter::CreatePhysics(float radius, float height)
     transform.setOrigin(btVector3(m_colliderPos.x, m_colliderPos.y, m_colliderPos.z));
 
     // 質量を設定
-    btScalar mass = 2.0f;
     btVector3 inertia(0, 0, 0);  // 慣性
 
     m_pShape->calculateLocalInertia(mass, inertia);

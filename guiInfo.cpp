@@ -12,6 +12,7 @@
 #include "imguimaneger.h"
 #include "player.h"
 #include "game.h"
+#include "enemy.h"
 
 //=============================================================================
 // プレイヤーのデバッグ情報の表示処理

@@ -13,6 +13,7 @@
 #include "particle.h"
 #include "guage.h"
 #include "manager.h"
+#include "enemy.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -105,7 +106,7 @@ HRESULT CPlayer::Init(void)
 	SetRot(D3DXVECTOR3(0.0f, -D3DX_PI, 0.0f));
 
 	// カプセルコライダーの設定
-	CreatePhysics(CAPSULE_RADIUS, CAPSULE_HEIGHT);
+	CreatePhysics(CAPSULE_RADIUS, CAPSULE_HEIGHT, 2.0f);
 
 	// ステンシルシャドウの生成
 	m_pShadowS = CShadowS::Create("data/MODELS/stencilshadow.x",GetPos());
@@ -166,7 +167,7 @@ void CPlayer::Update(void)
 	m_bOnGround = OnGround(CManager::GetPhysicsWorld(), GetRigidBody(), 55.0f);
 
 	// 武器コライダーの更新
-	m_pWeaponCollider->Update(m_pSwordModel);
+	m_pWeaponCollider->Update(m_pSwordModel, 40.0f, 10.0f);
 
 #ifdef _DEBUG
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
@@ -198,7 +199,7 @@ void CPlayer::Update(void)
 	UpdateRotation(0.09f);
 
 	// 移動入力があればプレイヤー向きを入力方向に
-	if (!m_pMotion->IsAttacking() && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f))
+	if (!m_pMotion->IsAttacking(ATTACK_01) && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f))
 	{
 		// Y成分だけを使いたいので目標の向きを取得
 		D3DXVECTOR3 rotDest = GetRotDest();
@@ -298,17 +299,17 @@ void CPlayer::Draw(void)
 
 #ifdef _DEBUG
 
-	btRigidBody* pRigid = GetRigidBody();
-	btCollisionShape* pShape = GetCollisionShape();
+	//btRigidBody* pRigid = GetRigidBody();
+	//btCollisionShape* pShape = GetCollisionShape();
 
-	// カプセルコライダーの描画
-	if (pRigid && pShape)
-	{
-		btTransform transform;
-		pRigid->getMotionState()->getWorldTransform(transform);
+	//// カプセルコライダーの描画
+	//if (pRigid && pShape)
+	//{
+	//	btTransform transform;
+	//	pRigid->getMotionState()->getWorldTransform(transform);
 
-		m_pDebug3D->DrawCapsuleCollider((btCapsuleShape*)pShape, transform, D3DXCOLOR(1, 1, 1, 1));
-	}
+	//	m_pDebug3D->DrawCapsuleCollider((btCapsuleShape*)pShape, transform, D3DXCOLOR(1, 1, 1, 1));
+	//}
 
 #endif
 
@@ -457,7 +458,8 @@ InputData CPlayer::GatherInput(void)
 	// ---------------------------
 	// 攻撃中は移動入力無効化
 	// ---------------------------
-	if (m_pMotion->IsAttacking())
+	if (m_pMotion->IsAttacking(ATTACK_01) || m_pMotion->IsCurrentMotion(BACKFRIP) || 
+		m_pMotion->IsCurrentMotion(ATTACK_JUMPSLASH) || m_pMotion->IsCurrentMotion(DAMAGE))
 	{
 		return input;
 	}

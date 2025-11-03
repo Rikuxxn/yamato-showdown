@@ -33,7 +33,11 @@ public:
 	void Countup(void);
 	void Countdown(void);
 	void Draw(void);
-	D3DXVECTOR3 GetPos(void);
+
+	bool IsTimeUp(void) { return m_isTimeUp; }
+
+	float GetProgress(void) const;
+	D3DXVECTOR3 GetPos(void) { return D3DXVECTOR3(); }
 	int GetMinutes(void) { return m_nMinutes; }
 	int GetnSeconds(void) { return m_nSeconds; }
 
@@ -48,6 +52,9 @@ private:
 	D3DXVECTOR3 m_basePos;					// 表示の開始位置
 	CColon* m_pColon;						// コロンへのポインタ
 	int m_nIdxTexture;						// テクスチャインデックス
+	int m_nStartMinutes;
+	int m_nStartSeconds;
+	bool m_isTimeUp;						// タイムアップフラグ
 
 };
 

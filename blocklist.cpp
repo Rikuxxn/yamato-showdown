@@ -67,10 +67,6 @@ void CWoodBoxBlock::Respawn(D3DXVECTOR3 resPos)
 	// 動かすためにキネマティックにする
 	SetEditMode(true);
 
-	// 水しぶきパーティクル生成
-	CParticle::Create<CWaterParticle>(INIT_VEC3, GetPos(), D3DXCOLOR(0.3f, 0.6f, 1.0f, 0.8f), 50, 10);
-	CParticle::Create<CWaterParticle>(INIT_VEC3, GetPos(), D3DXCOLOR(0.3f, 0.5f, 1.0f, 0.5f), 50, 10);
-
 	// リスポーン位置に設定
 	SetPos(resPos);
 	SetRot(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
@@ -80,30 +76,6 @@ void CWoodBoxBlock::Respawn(D3DXVECTOR3 resPos)
 
 	// 動的に戻す
 	SetEditMode(false);
-}
-//=============================================================================
-// セット処理
-//=============================================================================
-void CWoodBoxBlock::Set(D3DXVECTOR3 pos)
-{
-	// 動かすためにキネマティックにする
-	SetEditMode(true);
-
-	// 鍵ブロックの位置を取得
-	D3DXVECTOR3 Pos = GetPos();
-	D3DXVECTOR3 Rot = GetRot();
-
-	D3DXVECTOR3 targetPos(pos);			// 設置する目標位置
-	D3DXVECTOR3 rot(0.0f, 0.0f, 0.0f);	// 向きをリセット
-
-	Pos = targetPos;
-	Rot = rot;
-
-	SetPos(Pos);
-	SetRot(Rot);
-
-	// コライダーの更新
-	UpdateCollider();
 }
 
 

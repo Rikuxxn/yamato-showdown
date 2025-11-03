@@ -329,7 +329,7 @@ void CModel::SetOutlineShaderConstants(LPDIRECT3DDEVICE9 pDevice)
 
 	if (m_pPSConsts) // ピクセルシェーダ定数テーブル
 	{
-		D3DXVECTOR4 col(0, 0, 0, 1); // 黒アウトライン
+		D3DXVECTOR4 col(0.0f, 0.0f, 0.0f, 1.0f); // 黒アウトライン
 		m_pPSConsts->SetVector(pDevice, "g_OutlineColor", &col);
 	}
 }

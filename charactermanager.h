@@ -32,7 +32,7 @@ public:
     void Draw(void) = 0;
 
     // “–‚½‚è”»’è‚Ì¶¬
-    void CreatePhysics(float radius, float height);
+    void CreatePhysics(float radius, float height, btScalar mass);
 
     // Physics‚Ì”jŠü
     void ReleasePhysics(void);
@@ -57,7 +57,7 @@ public:
     }
 
     // ƒ_ƒ[ƒWˆ—
-    void Damage(float fDamage)
+    virtual void Damage(float fDamage)
     {
         if (m_isDead)
         {

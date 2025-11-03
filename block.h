@@ -139,8 +139,6 @@ public:
 	virtual btVector3 GetAngularFactor(void) const { return btVector3(1.0f, 1.0f, 1.0f); }
 	virtual btScalar GetRollingFriction(void) const { return 0.7f; }
 	virtual btScalar GetFriction(void) const { return 1.0f; }
-	virtual D3DXVECTOR3 GetVelocity(void) { return D3DXVECTOR3(0.0f, 0.0f, 0.0f); }
-	virtual float CarryTargetDis(void) { return 60.0f; }
 
 private:
 	TYPE m_Type;					// Ží—Þ

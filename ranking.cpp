@@ -76,17 +76,29 @@ void CRanking::Update(void)
 {
 	// 入力受付のためにインプット処理を取得
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
+	CInputMouse* pMouse = CManager::GetInputMouse();
 	CInputJoypad* pJoypad = CManager::GetInputJoypad();
 
 	// 画面遷移のためにフェードを取得
 	CFade* pFade = CManager::GetFade();
 
+#ifdef _DEBUG
 	// 画面遷移
-	if (pFade->GetFade() == CFade::FADE_NONE && (pKeyboard->GetAnyKeyTrigger() || pJoypad->GetTrigger(pJoypad->JOYKEY_A)))
+	if (pFade->GetFade() == CFade::FADE_NONE && 
+		(pKeyboard->GetAnyKeyTrigger() || pJoypad->GetTrigger(pJoypad->JOYKEY_A)))
 	{
 		// タイトル画面に移行
 		CManager::GetFade()->SetFade(CScene::MODE_TITLE);
 	}
+#else
+	// 画面遷移
+	if (pFade->GetFade() == CFade::FADE_NONE && 
+		(pMouse->GetTrigger(0) || pJoypad->GetTrigger(pJoypad->JOYKEY_A)))
+	{
+		// タイトル画面に移行
+		CManager::GetFade()->SetFade(CScene::MODE_TITLE);
+	}
+#endif
 }
 //=============================================================================
 // 描画処理

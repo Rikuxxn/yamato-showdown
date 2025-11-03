@@ -108,7 +108,7 @@ HRESULT CManager::Init(HINSTANCE hInstance, HWND hWnd)
 	m_pDynamicsWorld = make_unique <btDiscreteDynamicsWorld>(m_pDispatcher.get(), m_pBroadphase.get(), m_pSolver.get(), m_pCollisionConfiguration.get());
 
 	// d—Í‚ğİ’è
-	m_pDynamicsWorld->setGravity(btVector3(0, -630.0f, 0));
+	m_pDynamicsWorld->setGravity(btVector3(0, -9030.0f, 0));
 
 	// ƒJƒƒ‰‚Ì¶¬
 	m_pCamera = new CCamera;

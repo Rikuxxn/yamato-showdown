@@ -30,6 +30,9 @@ CTime::CTime(int nPriority) : CObject(nPriority)
 	m_basePos = INIT_VEC3;						// 表示の開始位置
 	m_pColon = nullptr;							// コロン
 	m_nIdxTexture = 0;							// テクスチャインデックス
+	m_nStartMinutes = 0;						// 経過時間の割合の結果代入用
+	m_nStartSeconds = 0;						// 経過時間の割合の結果代入用
+	m_isTimeUp = false;							// タイムアップフラグ
 }
 //=============================================================================
 // デストラクタ
@@ -53,6 +56,10 @@ CTime* CTime::Create(int minutes, int seconds,float baseX,float baseY,float digi
 	pTime->m_basePos = D3DXVECTOR3(baseX, baseY, 0.0f);
 	pTime->m_digitWidth = digitWidth;
 	pTime->m_digitHeight = digitHeight;
+
+	// 経過時間の割合を求めるために変数に代入
+	pTime->m_nStartMinutes = pTime->m_nMinutes;
+	pTime->m_nStartSeconds = pTime->m_nSeconds;
 
 	// 初期化処理
 	pTime->Init();
@@ -213,6 +220,8 @@ void CTime::Countdown(void)
 			{
 				// 分も0ならタイムアップ
 				m_nSeconds = 0;
+
+				m_isTimeUp = true;
 			}
 		}
 	}
@@ -243,12 +252,27 @@ void CTime::Draw(void)
 	}
 }
 //=============================================================================
-// 位置の取得
+// 経過割合を取得する関数（0.0f ～ 1.0f）
 //=============================================================================
-D3DXVECTOR3 CTime::GetPos(void)
+float CTime::GetProgress(void) const
 {
-	return D3DXVECTOR3();
+	// 開始時の総フレーム数
+	int totalFrames = (m_nStartMinutes * 60 + m_nStartSeconds) * 60;
+
+	// 現在の残りフレーム数
+	int currentFrames = (m_nMinutes * 60 + m_nSeconds) * 60 + (60 - m_nFrameCount);
+
+	// 経過率を計算（0.0 = 開始、1.0 = 終了）
+	float progress = 1.0f - (float)currentFrames / (float)totalFrames;
+
+	// 範囲を制限
+	if (progress < 0.0f) progress = 0.0f;
+	if (progress > 1.0f) progress = 1.0f;
+
+	return progress;
 }
+
+
 //=============================================================================
 // コロンのコンストラクタ
 //=============================================================================

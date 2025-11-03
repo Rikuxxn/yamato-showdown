@@ -38,6 +38,7 @@ public:
 	HRESULT Init(void);
 	void Uninit(void);
 	void Update(void);
+	void UpdateLight(void);
 	void Draw(void);
 	static void ResetLight(void);
 	void OnDeviceReset(void) override;

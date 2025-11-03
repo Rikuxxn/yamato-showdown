@@ -28,54 +28,21 @@ public:
 	void Update(CModel** pModel, int& nNumModel);
 	void StartBlendMotion(int  motionTypeBlend, int nFrameBlend);
 	void SetMotion(int  motionType);
+	void AdvanceKeyCounter(int motionType, int& nKey, int& nCounter, bool bLoop);
 
+	bool IsCurrentMotion(int motionType) const;
 	bool IsCurrentMotionEnd(int motionType) const;
 	int GetMotionType(void) { return m_motionType; }
 
-	bool IsAttacking(int motionType, int keyIndex, int startFrame, int endFrame) const;
-	bool IsAttacking(void) const;
+	bool IsAttacking(int motionType, int startKey, int endKey, int startFrame, int endFrame) const;
+	bool IsAttacking(int motionType) const;
+	float GetMotionRate(void) const;
 
 private:
 	static constexpr int MAX_WORD	= 1024;	// 最大文字数
 	static constexpr int MAX_PARTS	= 32;	// 最大パーツ数
 	static constexpr int MAX_KEY	= 128;	// 最大キー数
 	static constexpr int MAX_MOTION = 10;	// モーションの最大数
-
-	void NormalizeRotX(D3DXVECTOR3 rot)
-	{
-		if (rot.x > D3DX_PI)
-		{
-			rot.x -= D3DX_PI * 2.0f;
-		}
-		else if (rot.x < -D3DX_PI)
-		{
-			rot.x += D3DX_PI * 2.0f;
-		}
-	}
-
-	void NormalizeRotY(D3DXVECTOR3 rot)
-	{
-		if (rot.y > D3DX_PI)
-		{
-			rot.y -= D3DX_PI * 2.0f;
-		}
-		else if (rot.y < -D3DX_PI)
-		{
-			rot.y += D3DX_PI * 2.0f;
-		}
-	}
-
-	void NormalizeRotZ(D3DXVECTOR3 rot)
-	{
-		if (rot.z > D3DX_PI)
-		{
-			rot.z -= D3DX_PI * 2.0f;
-		}
-		else if (rot.z < -D3DX_PI)
-		{
-			rot.z += D3DX_PI * 2.0f;
-		}
-	}
 
 	//*************************************************************************
 	// キー構造体
@@ -89,6 +56,38 @@ private:
 		float fRotY;							// 向き(Y)
 		float fRotZ;							// 向き(Z)
 	}KEY;
+
+	//*************************************************************************
+	// 補間関数(位置)
+	//*************************************************************************
+	inline D3DXVECTOR3 LerpPos(const KEY& a, const KEY& b, float t)
+	{
+		return D3DXVECTOR3(
+			a.fPosX + (b.fPosX - a.fPosX) * t,
+			a.fPosY + (b.fPosY - a.fPosY) * t,
+			a.fPosZ + (b.fPosZ - a.fPosZ) * t
+		);
+	}
+
+	//*************************************************************************
+	// 補間関数(向き)
+	//*************************************************************************
+	inline D3DXVECTOR3 LerpRot(const KEY& a, const KEY& b, float t)
+	{
+		auto delta = [](float from, float to)
+		{
+			float d = to - from;
+			if (d > D3DX_PI) d -= D3DX_PI * 2.0f;
+			else if (d < -D3DX_PI) d += D3DX_PI * 2.0f;
+			return d;
+		};
+
+		return D3DXVECTOR3(
+			a.fRotX + delta(a.fRotX, b.fRotX) * t,
+			a.fRotY + delta(a.fRotY, b.fRotY) * t,
+			a.fRotZ + delta(a.fRotZ, b.fRotZ) * t
+		);
+	}
 
 	//*************************************************************************
 	// キー情報の構造体

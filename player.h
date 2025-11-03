@@ -25,6 +25,9 @@
 class CPlayer_StandState;
 class CPlayer_MoveState;
 class CPlayer_AttackState1;
+class CPlayer_BackfripState;
+class CPlayer_JumpSlashState;
+class CPlayer_DamageState;
 
 // 入力データ構造体
 struct InputData
@@ -50,6 +53,9 @@ public:
 		NEUTRAL = 0,		// 待機
 		MOVE,				// 移動
 		ATTACK_01,			// 攻撃1
+		BACKFRIP,			// バク転
+		ATTACK_JUMPSLASH,	// ジャンプ斬り
+		DAMAGE,
 		MAX
 	}PLAYER_MOTION;
 
@@ -86,6 +92,26 @@ public:
 	void UpdateMovementFlags(const D3DXVECTOR3& moveDir)
 	{
 		m_bIsMoving = (moveDir.x != 0.0f || moveDir.z != 0.0f);
+	}
+
+	void Damage(float fDamage) override
+	{
+		if (!m_pMotion->IsCurrentMotion(DAMAGE))
+		{
+			// まず共通のHP処理
+			CCharacter::Damage(fDamage);
+
+			// ダメージステートへ
+			m_stateMachine.ChangeState<CPlayer_DamageState>();
+		}
+
+		// 死亡時
+		if (IsDead())
+		{
+			//// 死亡状態
+			//m_stateMachine.ChangeState<CPlayer_DeadState>();
+			return;
+		}
 	}
 
 private:
@@ -137,7 +163,7 @@ public:
 		InputData input = pPlayer->GatherInput();
 
 		// 攻撃入力があれば攻撃ステート1に移行
-		if (input.attack && !pPlayer->GetMotion()->IsAttacking())
+		if (input.attack && !pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01))
 		{
 			// 攻撃状態1へ移行
 			m_pMachine->ChangeState<CPlayer_AttackState1>();
@@ -153,7 +179,7 @@ public:
 
 		D3DXVECTOR3 move = pPlayer->GetMove();
 
-		move *= 0.85f; // 減速率
+		move *= 0.82f; // 減速率
 		if (fabsf(move.x) < 0.01f) move.x = 0;
 		if (fabsf(move.z) < 0.01f) move.z = 0;
 
@@ -163,6 +189,7 @@ public:
 		// リジッドボディに反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
 		velocity.setX(move.x);
+		velocity.setY(-50.0f);
 		velocity.setZ(move.z);
 		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
 	}
@@ -185,7 +212,7 @@ public:
 
 	void OnStart(CPlayer* pPlayer)override
 	{
-		if (!pPlayer->GetMotion()->IsAttacking())
+		if (!pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01))
 		{
 			// 移動モーション
 			pPlayer->GetMotion()->StartBlendMotion(CPlayer::MOVE, 10);
@@ -216,7 +243,6 @@ public:
 		if (targetMove.x != 0.0f || targetMove.z != 0.0f)
 		{
 			D3DXVec3Normalize(&targetMove, &targetMove);
-			moveSpeed = CPlayer::PLAYER_SPEED;
 
 			targetMove *= moveSpeed;
 		}
@@ -242,7 +268,7 @@ public:
 		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
 
 		// 移動していなければ待機ステートに戻す
-		if (!pPlayer->GetIsMoving() && !pPlayer->GetMotion()->IsAttacking())
+		if (!pPlayer->GetIsMoving() && !pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01))
 		{
 			// 待機状態
 			m_pMachine->ChangeState<CPlayer_StandState>();
@@ -270,7 +296,7 @@ public:
 		// 攻撃モーション
 		pPlayer->GetMotion()->StartBlendMotion(CPlayer::ATTACK_01, 10);
 
-		// 向いている方向にスライドさせるため、プレイヤーの前方ベクトルを取得
+		// 向いている方向
 		D3DXVECTOR3 dir = pPlayer->GetForward();
 
 		// 正規化
@@ -316,7 +342,7 @@ public:
 		if (pPlayer->GetWeapon() && pPlayer->GetWeaponCollider())
 		{
 			// 攻撃中だけ有効化
-			if (pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01, 2, 0, 5))
+			if (pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01, 2, 3, 0, 5))
 			{
 				pPlayer->GetWeaponCollider()->SetActive(true);
 				pPlayer->GetWeaponCollider()->ResetPrevPos();
@@ -330,10 +356,19 @@ public:
 			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy());
 		}
 
+		if (pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01))
+		{// 攻撃モーションの途中で入力があった場合
+			if (input.attack)
+			{
+				// バク転状態
+				m_pMachine->ChangeState<CPlayer_BackfripState>();
+			}
+		}
+
 		if (pPlayer->GetMotion()->IsCurrentMotionEnd(CPlayer::ATTACK_01))
 		{// 攻撃モーションが終わっていたら
+
 			// 待機状態
-			pPlayer->GetMotion()->SetMotion(CPlayer::NEUTRAL);
 			m_pMachine->ChangeState<CPlayer_StandState>();
 
 			return;
@@ -347,6 +382,310 @@ public:
 
 private:
 
+};
+
+//*****************************************************************************
+// プレイヤーのバク転状態
+//*****************************************************************************
+class CPlayer_BackfripState :public StateBase<CPlayer>
+{
+public:
+
+	void OnStart(CPlayer* pPlayer)override
+	{
+		// バク転モーション
+		pPlayer->GetMotion()->StartBlendMotion(CPlayer::BACKFRIP, 10);
+
+		// ヒットフラグをリセット
+		pPlayer->GetWeaponCollider()->ResetHit();
+
+		// 最初の勢い（後方への初速）
+		D3DXVECTOR3 backDir = -pPlayer->GetForward();
+		D3DXVec3Normalize(&backDir, &backDir);
+
+		float backPower = 3500.0f; // 初速パワー
+		D3DXVECTOR3 move = backDir * backPower;
+
+		pPlayer->SetMove(move);
+
+		// 上方向初速
+		m_verticalVelocity = 500.0f;
+
+		// 物理に反映
+		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(m_verticalVelocity);
+		velocity.setZ(move.z);
+		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+	}
+
+	void OnUpdate(CPlayer* pPlayer)override
+	{
+		// 入力取得
+		InputData input = pPlayer->GatherInput();
+
+		// フラグ更新
+		pPlayer->UpdateMovementFlags(input.moveDir);
+
+		// バク転モーションの進行度を取得
+		float motionRate = pPlayer->GetMotion()->GetMotionRate(); // 0.0～1.0
+		D3DXVECTOR3 move = pPlayer->GetMove();
+
+		// モーション前半だけ後方移動を維持
+		if (motionRate < 0.4f)
+		{
+			D3DXVECTOR3 backDir = -pPlayer->GetForward();
+			D3DXVec3Normalize(&backDir, &backDir);
+
+			float backPower = 400.0f; // 滑りながら下がる速度
+			move = backDir * backPower;
+		}
+		else
+		{
+			// 後半は減速
+			move *= 0.82f;
+			if (fabsf(move.x) < 0.01f) move.x = 0;
+			if (fabsf(move.z) < 0.01f) move.z = 0;
+		}
+
+		// ===== 重力処理 =====
+		m_verticalVelocity -= 20.0f; // 重力加速度
+		if (m_verticalVelocity < -300.0f)
+		{
+			m_verticalVelocity = -300.0f; // 最大落下速度を制限
+		}
+
+		// 移動量を設定
+		pPlayer->SetMove(move);
+
+		// リジッドボディに反映
+		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(m_verticalVelocity);
+		velocity.setZ(move.z);
+		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+
+		if (motionRate > 0.4f)
+		{
+			if (input.attack)
+			{
+				// ジャンプ斬り攻撃状態
+				m_pMachine->ChangeState<CPlayer_JumpSlashState>();
+				return;
+			}
+		}
+
+		// バク転モーションが終わったら待機ステートに戻す
+		if (pPlayer->GetMotion()->IsCurrentMotionEnd(CPlayer::BACKFRIP))
+		{
+			// 待機状態
+			m_pMachine->ChangeState<CPlayer_StandState>();
+		}
+	}
+
+	void OnExit(CPlayer* /*pPlayer*/)override
+	{
+		m_verticalVelocity = 0.0f;
+	}
+
+private:
+	float m_verticalVelocity = 0.0f; // 上下方向速度
+};
+
+//*****************************************************************************
+// ジャンプ斬り攻撃状態
+//*****************************************************************************
+class CPlayer_JumpSlashState :public StateBase<CPlayer>
+{
+public:
+
+	void OnStart(CPlayer* pPlayer)override
+	{
+		// 攻撃モーション
+		pPlayer->GetMotion()->StartBlendMotion(CPlayer::ATTACK_JUMPSLASH, 10);
+
+		// 最初の勢い（前方への初速）
+		D3DXVECTOR3 forwardDir = pPlayer->GetForward();
+		D3DXVec3Normalize(&forwardDir, &forwardDir);
+
+		float forwardPower = 1700.0f; // 初速パワー
+		D3DXVECTOR3 move = forwardDir * forwardPower;
+
+		pPlayer->SetMove(move);
+
+		// 上方向初速
+		m_verticalVelocity = 520.0f;
+
+		// 物理に反映
+		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(m_verticalVelocity);
+		velocity.setZ(move.z);
+		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+	}
+
+	void OnUpdate(CPlayer* pPlayer)override
+	{
+		// モーションの進行度を取得
+		float motionRate = pPlayer->GetMotion()->GetMotionRate(); // 0.0～1.0
+		D3DXVECTOR3 move = pPlayer->GetMove();
+
+		// モーション前半だけ前方移動を維持
+		if (motionRate < 0.4f)
+		{
+			D3DXVECTOR3 forwardDir = pPlayer->GetForward();
+			D3DXVec3Normalize(&forwardDir, &forwardDir);
+
+			float forwardPower = 200.0f; // 滑る速度
+			move = forwardDir * forwardPower;
+		}
+		else
+		{
+			// 後半は減速
+			move *= 0.82f;
+			if (fabsf(move.x) < 0.01f) move.x = 0;
+			if (fabsf(move.z) < 0.01f) move.z = 0;
+		}
+
+		// ===== 重力処理 =====
+		m_verticalVelocity -= 20.0f; // 重力加速度
+		if (m_verticalVelocity < -300.0f)
+		{
+			m_verticalVelocity = -300.0f; // 最大落下速度を制限
+		}
+
+		// 移動量を設定
+		pPlayer->SetMove(move);
+
+		// リジッドボディに反映
+		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(m_verticalVelocity);
+		velocity.setZ(move.z);
+		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+
+		if (pPlayer->GetWeapon() && pPlayer->GetWeaponCollider())
+		{
+			// 攻撃中だけ有効化
+			if (pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_JUMPSLASH, 2, 3, 0, 10))
+			{
+				pPlayer->GetWeaponCollider()->SetActive(true);
+				pPlayer->GetWeaponCollider()->ResetPrevPos();
+			}
+			else
+			{
+				pPlayer->GetWeaponCollider()->SetActive(false);
+			}
+
+			// 敵に当たったか判定する
+			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy());
+		}
+
+		if (pPlayer->GetMotion()->IsCurrentMotionEnd(CPlayer::ATTACK_JUMPSLASH))
+		{// 攻撃モーションが終わっていたら
+			// 待機状態
+			m_pMachine->ChangeState<CPlayer_StandState>();
+
+			return;
+		}
+	}
+
+	void OnExit(CPlayer* /*pPlayer*/)override
+	{
+		m_verticalVelocity = 0.0f;
+	}
+
+private:
+	float m_verticalVelocity = 0.0f; // 上下方向速度
+
+};
+
+//*****************************************************************************
+// プレイヤーのダメージ状態
+//*****************************************************************************
+class CPlayer_DamageState :public StateBase<CPlayer>
+{
+public:
+
+	void OnStart(CPlayer* pPlayer)override
+	{
+		// ダメージモーション
+		pPlayer->GetMotion()->StartBlendMotion(CPlayer::DAMAGE, 10);
+
+		// 最初の勢い（後方への初速）
+		D3DXVECTOR3 forwardDir = -pPlayer->GetForward();
+		D3DXVec3Normalize(&forwardDir, &forwardDir);
+
+		float forwardPower = 1700.0f; // 初速パワー
+		D3DXVECTOR3 move = forwardDir * forwardPower;
+
+		pPlayer->SetMove(move);
+
+		// 上方向初速
+		m_verticalVelocity = 620.0f;
+
+		// 物理に反映
+		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(m_verticalVelocity);
+		velocity.setZ(move.z);
+		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+	}
+
+	void OnUpdate(CPlayer* pPlayer)override
+	{
+		// モーションの進行度を取得
+		float motionRate = pPlayer->GetMotion()->GetMotionRate(); // 0.0～1.0
+		D3DXVECTOR3 move = pPlayer->GetMove();
+
+		// モーション前半だけ前方移動を維持
+		if (motionRate < 0.4f)
+		{
+			D3DXVECTOR3 forwardDir = -pPlayer->GetForward();
+			D3DXVec3Normalize(&forwardDir, &forwardDir);
+
+			float forwardPower = 150.0f; // 滑る速度
+			move = forwardDir * forwardPower;
+		}
+		else
+		{
+			// 後半は減速
+			move *= 0.88f;
+			if (fabsf(move.x) < 0.01f) move.x = 0;
+			if (fabsf(move.z) < 0.01f) move.z = 0;
+		}
+
+		// ===== 重力処理 =====
+		m_verticalVelocity -= 30.0f; // 重力加速度
+		if (m_verticalVelocity < -300.0f)
+		{
+			m_verticalVelocity = -300.0f; // 最大落下速度を制限
+		}
+
+		// 移動量を設定
+		pPlayer->SetMove(move);
+
+		// リジッドボディに反映
+		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(m_verticalVelocity);
+		velocity.setZ(move.z);
+		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
+
+		if (pPlayer->GetMotion()->IsCurrentMotionEnd(CPlayer::DAMAGE))
+		{
+			// 待機状態
+			m_pMachine->ChangeState<CPlayer_StandState>();
+		}
+	}
+
+	void OnExit(CPlayer* /*pPlayer*/)override
+	{
+		m_verticalVelocity = 0.0f;
+	}
+
+private:
+	float m_verticalVelocity; // 上下方向速度
 };
 
 #endif
