@@ -353,7 +353,7 @@ public:
 			}
 
 			// “G‚É“–‚½‚Á‚½‚©”»’è‚·‚é
-			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy());
+			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy(), 3.0f);
 		}
 
 		if (pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01))
@@ -578,7 +578,7 @@ public:
 			}
 
 			// “G‚É“–‚½‚Á‚½‚©”»’è‚·‚é
-			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy());
+			pPlayer->GetWeaponCollider()->CheckHit(CGame::GetEnemy(), 6.0f);
 		}
 
 		if (pPlayer->GetMotion()->IsCurrentMotionEnd(CPlayer::ATTACK_JUMPSLASH))
@@ -616,7 +616,7 @@ public:
 		D3DXVECTOR3 forwardDir = -pPlayer->GetForward();
 		D3DXVec3Normalize(&forwardDir, &forwardDir);
 
-		float forwardPower = 1700.0f; // ‰‘¬ƒpƒ[
+		float forwardPower = 1200.0f; // ‰‘¬ƒpƒ[
 		D3DXVECTOR3 move = forwardDir * forwardPower;
 
 		pPlayer->SetMove(move);

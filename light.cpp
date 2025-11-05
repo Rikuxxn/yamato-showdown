@@ -114,9 +114,9 @@ int CLight::AddLight(D3DLIGHTTYPE type, const D3DXCOLOR& diffuse, const D3DXVECT
     if (type == D3DLIGHT_POINT)
     {
         lightInfo.light.Attenuation0 = 0.0f;
-        lightInfo.light.Attenuation1 = 0.02f;
+        lightInfo.light.Attenuation1 = 0.006f;
         lightInfo.light.Attenuation2 = 0.0f;
-        lightInfo.light.Range = 105.0f;
+        lightInfo.light.Range = 230.0f;
     }
     else if (type == D3DLIGHT_SPOT)
     {
@@ -125,7 +125,7 @@ int CLight::AddLight(D3DLIGHTTYPE type, const D3DXCOLOR& diffuse, const D3DXVECT
         lightInfo.light.Phi = D3DXToRadian(95.0f);  // å∏êäÇµÇƒÇ¢Ç≠äOë§        
         lightInfo.light.Falloff = 1.0f;
         lightInfo.light.Attenuation0 = 1.0f;
-        lightInfo.light.Attenuation1 = 0.05f;    // ä…Ç‚Ç©Ç»å∏êä
+        lightInfo.light.Attenuation1 = 0.0005f;    // ä…Ç‚Ç©Ç»å∏êä
         lightInfo.light.Attenuation2 = 0.0f;
     }
 

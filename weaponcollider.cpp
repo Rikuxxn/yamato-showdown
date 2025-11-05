@@ -35,7 +35,7 @@ CWeaponCollider::~CWeaponCollider()
 //=============================================================================
 // 当たり判定処理(敵)
 //=============================================================================
-void CWeaponCollider::CheckHit(CEnemy* pEnemy)
+void CWeaponCollider::CheckHit(CEnemy* pEnemy, float fDamage)
 {
     if (!m_bActive || m_bHasHit || !pEnemy)
     {
@@ -54,7 +54,7 @@ void CWeaponCollider::CheckHit(CEnemy* pEnemy)
         CCollision::IntersectSegmentCapsule(m_prevBase, m_currTip, bottom, top, radius + weaponRadius))
     {
         // ダメージ処理
-        pEnemy->Damage(5.0f);
+        pEnemy->Damage(fDamage);
         m_bHasHit = true; // 当たった
     }
 
@@ -65,7 +65,7 @@ void CWeaponCollider::CheckHit(CEnemy* pEnemy)
 //=============================================================================
 // 当たり判定処理(プレイヤー)
 //=============================================================================
-void CWeaponCollider::CheckHit(CPlayer* pPlayer)
+void CWeaponCollider::CheckHit(CPlayer* pPlayer, float fDamage)
 {
     if (!m_bActive || m_bHasHit || !pPlayer)
     {
@@ -84,7 +84,7 @@ void CWeaponCollider::CheckHit(CPlayer* pPlayer)
         CCollision::IntersectSegmentCapsule(m_prevBase, m_currTip, bottom, top, radius + weaponRadius))
     {
         // ダメージ処理
-        pPlayer->Damage(1.0f);
+        pPlayer->Damage(fDamage);
         m_bHasHit = true; // 当たった
     }
 

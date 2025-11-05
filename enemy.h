@@ -89,8 +89,17 @@ public:
 
 	void Damage(float fDamage) override
 	{
-		// まず共通のHP処理
-		CCharacter::Damage(fDamage);
+		if (!m_pMotion->IsCurrentMotion(DAMAGE))
+		{
+			// まず共通のHP処理
+			CCharacter::Damage(fDamage);
+		}
+
+		if (!m_pMotion->IsCurrentMotion(ACCUMULATION))
+		{
+			// ダメージステートへ
+			m_stateMachine.ChangeState<CEnemy_DamageState>();
+		}
 
 		// 死亡時
 		if (IsDead())
@@ -99,9 +108,6 @@ public:
 			//m_stateMachine.ChangeState<CEnemy_DeadState>();
 			return;
 		}
-
-		// ダメージステートへ
-		m_stateMachine.ChangeState<CEnemy_DamageState>();
 	}
 
 private:
@@ -440,7 +446,7 @@ public:
 		if (pEnemy->GetWeapon() && pEnemy->GetWeaponCollider())
 		{
 			// 攻撃中だけ有効化
-			if (pEnemy->GetMotion()->IsAttacking(CEnemy::ATTACK_01, 1, 2, 0, 30))
+			if (pEnemy->GetMotion()->IsAttacking(CEnemy::ATTACK_01, 0, 2, 0, 20))
 			{
 				pEnemy->GetWeaponCollider()->SetActive(true);
 				pEnemy->GetWeaponCollider()->ResetPrevPos();
@@ -451,7 +457,7 @@ public:
 			}
 
 			// プレイヤーに当たったか判定する
-			pEnemy->GetWeaponCollider()->CheckHit(CGame::GetPlayer());
+			pEnemy->GetWeaponCollider()->CheckHit(CGame::GetPlayer(), 1.0f);
 		}
 
 		if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::ATTACK_01))
@@ -482,19 +488,33 @@ public:
 	void OnStart(CEnemy* pEnemy)override
 	{
 		// ダメージモーション
-		pEnemy->GetMotion()->StartBlendMotion(CEnemy::DAMAGE, 20);
+		pEnemy->GetMotion()->StartBlendMotion(CEnemy::DAMAGE, 10);
 
-		m_timer = 0.0f;
-		m_duration = 30.0f; // ダメージ硬直フレーム数
+		// 向いている方向の後ろ
+		D3DXVECTOR3 dir = -pEnemy->GetForward();
+
+		// 正規化
+		D3DXVec3Normalize(&dir, &dir);
+
+		float backPower = 130.0f;// スライドパワー
+
+		D3DXVECTOR3 move = dir * backPower;
+
+		// 現在の移動量に上書き
+		pEnemy->SetMove(move);
+
+		// 物理速度にも即反映
+		btVector3 velocity = pEnemy->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setZ(move.z);
+		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
 	}
 
 	void OnUpdate(CEnemy* pEnemy)override
 	{
-		m_timer++;
-
 		D3DXVECTOR3 move = pEnemy->GetMove();
 
-		move *= 0.95f; // 減速率
+		move *= 0.90f; // 減速率
 		if (fabsf(move.x) < 0.01f) move.x = 0;
 		if (fabsf(move.z) < 0.01f) move.z = 0;
 
@@ -508,7 +528,7 @@ public:
 		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
 
 		// 一定時間後に待機へ戻す
-		if (m_timer > m_duration || pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::DAMAGE))
+		if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::DAMAGE))
 		{
 			// 待機状態
 			m_pMachine->ChangeState<CEnemy_StandState>();
@@ -517,13 +537,11 @@ public:
 
 	void OnExit(CEnemy* /*pEnemy*/)override
 	{
-		m_verticalVelocity = 0.0f;
+
 	}
 
 private:
 	float m_verticalVelocity; // 上下方向速度
-	float m_timer;
-	float m_duration;
 };
 
 #endif

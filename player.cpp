@@ -169,6 +169,12 @@ void CPlayer::Update(void)
 	// 武器コライダーの更新
 	m_pWeaponCollider->Update(m_pSwordModel, 40.0f, 10.0f);
 
+	// ステートマシン更新
+	m_stateMachine.Update();
+
+	// 入力判定の取得
+	InputData input = GatherInput();
+
 #ifdef _DEBUG
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
 
@@ -188,12 +194,6 @@ void CPlayer::Update(void)
 	m_pBaseModel->SetPos(m_pWeaponCollider->GetCurrentBasePos());
 
 #endif
-
-	// ステートマシン更新
-	m_stateMachine.Update();
-
-	// 入力判定の取得
-	InputData input = GatherInput();
 
 	// 向きの更新処理
 	UpdateRotation(0.09f);

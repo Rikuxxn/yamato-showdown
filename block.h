@@ -70,6 +70,7 @@ public:
 	void ReleasePhysics(void);															// Physics破棄用
 	virtual void Respawn(D3DXVECTOR3 resPos);
 	virtual void DrawCustomUI(void) {}													// 派生クラスのGUI特殊処理用
+	virtual void UpdateLight(void) {}
 
 	virtual void SaveToJson(json& b)
 	{

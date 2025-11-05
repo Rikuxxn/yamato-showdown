@@ -88,6 +88,7 @@ void CBlockManager::Init(void)
 
 	// 動的配列を空にする (サイズを0にする)
 	m_blocks.clear();
+	m_blocksByType.clear();
 }
 //=============================================================================
 // サムネイルのレンダーターゲットの初期化
@@ -292,6 +293,7 @@ void CBlockManager::Uninit(void)
 
 	// 動的配列を空にする (サイズを0にする)
 	m_blocks.clear();
+	m_blocksByType.clear();
 }
 //=============================================================================
 // 削除予約があるブロックの削除処理
@@ -313,6 +315,7 @@ void CBlockManager::CleanupDeadBlocks(void)
 //=============================================================================
 void CBlockManager::Update(void)
 {
+
 #ifdef _DEBUG
 
 	// 情報の更新
@@ -1301,6 +1304,7 @@ void CBlockManager::LoadFromJson(const char* filename)
 
 	// 動的配列を空にする (サイズを0にする)
 	m_blocks.clear();
+	m_blocksByType.clear();
 
 	// 新たに生成
 	for (const auto& b : j)

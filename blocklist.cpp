@@ -100,7 +100,68 @@ void CTorchBlock::Update(void)
 {
 	// ブロックの更新処理
 	CBlock::Update();
+}
+//=============================================================================
+// 灯籠ブロックのライト更新処理
+//=============================================================================
+void CTorchBlock::UpdateLight(void)
+{
+	// 時間の割合を取得
+	float progress = CGame::GetTime()->GetProgress(); // 0.0～0.1
 
+	// ======== 各時間帯のメインライト色 ========
+	D3DXCOLOR evening(1.0f, 0.65f, 0.35f, 1.0f); // 夕日：濃いオレンジ
+	D3DXCOLOR night(0.15f, 0.18f, 0.35f, 1.0f);  // 夜：青みが強く暗い（でも完全には黒くしない）
+	D3DXCOLOR morning(0.95f, 0.8f, 0.7f, 1.0f);  // 明け方：柔らかいピンクベージュ
+
+	D3DXCOLOR mainColor;
+
+	// ======== 時間帯ごとに補間 ========
+	if (progress < 0.33f)
+	{// 夕方
+		float t = progress / 0.33f;
+		D3DXColorLerp(&mainColor, &evening, &night, t);
+	}
+	else if (progress < 0.66f)
+	{// 夜
+		float t = (progress - 0.33f) / 0.33f;
+		D3DXColorLerp(&mainColor, &night, &morning, t);
+	}
+	else
+	{// 明け方
+		float t = (progress - 0.66f) / 0.34f;
+		D3DXColorLerp(&mainColor, &morning, &evening, t); // 少し戻すとループっぽく自然
+	}
+
+	// ======== 光の向き補間 ========
+	D3DXVECTOR3 dirEvening(0.5f, -1.0f, 0.3f);
+	D3DXVECTOR3 dirNight(0.0f, -1.0f, 0.0f);
+	D3DXVECTOR3 dirMorning(-0.3f, -1.0f, -0.2f);
+	D3DXVECTOR3 mainDir;
+
+	if (progress < 0.5f)
+	{
+		float t = progress / 0.5f;
+		D3DXVec3Lerp(&mainDir, &dirEvening, &dirNight, t);
+	}
+	else
+	{
+		float t = (progress - 0.5f) / 0.5f;
+		D3DXVec3Lerp(&mainDir, &dirNight, &dirMorning, t);
+	}
+
+	D3DXVec3Normalize(&mainDir, &mainDir);
+
+	// 再設定
+	CLight::Uninit();
+
+	// ポイントライト
+	CLight::AddLight(
+		D3DLIGHT_POINT,
+		D3DXCOLOR(1.0f, 0.2f, 0.2f, 1.0f) ,
+		D3DXVECTOR3(0.0f, -1.0f, 0.0f) ,
+		D3DXVECTOR3(GetPos().x, GetPos().y + 20.0f, GetPos().z)
+	);
 }
 
 
@@ -162,10 +223,11 @@ void CWaterBlock::Update(void)
 
 			// 位置
 			pos.x = pos.x + cosf(angle) * radius;
+			pos.y += 2.0f;
 			pos.z = pos.z + sinf(angle) * radius;
 
 			// 波紋の生成
-			CMeshCylinder::Create(pos, D3DXCOLOR(0.3f, 0.6f, 1.0f, 0.9f), 5.0f, 8.0f, 0.5f, 50, 0.03f);
+			CMeshCylinder::Create(pos, D3DXCOLOR(0.3f, 0.7f, 1.0f, 0.9f), 5.0f, 8.0f, 0.5f, 50, 0.03f);
 
 			m_counter = 0;
 		}

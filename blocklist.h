@@ -48,6 +48,7 @@ public:
 	static TYPE GetStaticType(void) { return TYPE_TORCH_01; }
 
 	void Update(void);
+	void UpdateLight(void) override;
 
 private:
 

@@ -35,14 +35,18 @@ public:
     void LoadConfig(const std::string& filename);
     void GenerateRandomMap(int seed);
     void FillFloor(int GRID_X, int GRID_Z, float AREA_SIZE);
+    void UpdateLight(void) 
+    {
+        for (const auto& block : m_blocks)
+        {
+            block->UpdateLight();
+        }
+    }
 
     void ReleaseThumbnailRenderTarget(void);
-
     HRESULT InitThumbnailRenderTarget(LPDIRECT3DDEVICE9 device);
     IDirect3DTexture9* RenderThumbnail(CBlock* pBlock);
     void GenerateThumbnailsForResources(void);
-
-
     IDirect3DTexture9* GetThumbnailTexture(size_t index)
     {
         assert(index < m_thumbnailTextures.size());

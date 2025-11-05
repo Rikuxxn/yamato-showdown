@@ -19,12 +19,11 @@
 #include "objectBillboard.h"
 #include "block.h"
 #include "rankingmanager.h"
+#include "time.h"
 
 // --- 前方宣言 ---
 class CPlayer;
 class CEnemy;
-class CTime;
-class CColon;
 
 //*****************************************************************************
 // ゲームクラス
@@ -38,9 +37,8 @@ public:
 	HRESULT Init(void);
 	void Uninit(void);
 	void Update(void);
-	void UpdateLight(void);
+	virtual void UpdateLight(void);
 	void Draw(void);
-	static void ResetLight(void);
 	void OnDeviceReset(void) override;
 
 	static CPlayer* GetPlayer(void) { return m_pPlayer; }

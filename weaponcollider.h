@@ -50,8 +50,8 @@ public:
     }
 
     // “–‚½‚è”»’èˆ—
-    void CheckHit(CEnemy* pEnemy);
-    void CheckHit(CPlayer* pPlayer);
+    void CheckHit(CEnemy* pEnemy, float fDamage);
+    void CheckHit(CPlayer* pPlayer, float fDamage);
 
 private:
     D3DXVECTOR3 m_prevBase;

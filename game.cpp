@@ -70,8 +70,8 @@ HRESULT CGame::Init(void)
 	// ライトの初期化
 	m_pLight->Init();
 
-	// ライトの再設定処理
-	ResetLight();
+	//// ライトの再設定処理
+	//ResetLight();
 
 	CCharacterManager characterManager;
 
@@ -205,8 +205,9 @@ void CGame::Update(void)
 		// リザルト画面に移行
 		pFade->SetFade(MODE_RESULT);
 	}
-	else if (pFade->GetFade() == CFade::FADE_NONE && m_pTime->IsTimeUp())
-	{// 時間切れ
+	else if (pFade->GetFade() == CFade::FADE_NONE && m_pTime->IsTimeUp() ||
+		m_pPlayer->IsDead())
+	{// 時間切れ または プレイヤー死亡
 
 		// リザルト画面に移行
 		pFade->SetFade(MODE_RESULT);
@@ -235,7 +236,7 @@ void CGame::UpdateLight(void)
 {
 	float progress = m_pTime->GetProgress(); // 0.0～0.1
 
-// ======== 各時間帯のメインライト色 ========
+	// ======== 各時間帯のメインライト色 ========
 	D3DXCOLOR evening(1.0f, 0.65f, 0.35f, 1.0f); // 夕日：濃いオレンジ
 	D3DXCOLOR night(0.15f, 0.18f, 0.35f, 1.0f);  // 夜：青みが強く暗い（でも完全には黒くしない）
 	D3DXCOLOR morning(0.95f, 0.8f, 0.7f, 1.0f);  // 明け方：柔らかいピンクベージュ
@@ -279,6 +280,8 @@ void CGame::UpdateLight(void)
 
 	// 再設定
 	CLight::Uninit();
+
+	m_pBlockManager->UpdateLight();
 
 	// メインライト（太陽・月相当）
 	CLight::AddLight(
@@ -338,60 +341,11 @@ void CGame::Draw(void)
 	}
 }
 //=============================================================================
-// ライトの再設定処理
-//=============================================================================
-void CGame::ResetLight(void)
-{
-	// ライトを削除しておく
-	CLight::Uninit();
-
-	// メインライト（夕日）: オレンジ＋斜めから照射
-	CLight::AddLight(
-		D3DLIGHT_DIRECTIONAL,
-		D3DXCOLOR(1.0f, 0.6f, 0.3f, 1.0f),   // 暖かいオレンジ
-		D3DXVECTOR3(0.5f, -1.0f, 0.3f),      // 右上→左下に差す
-		D3DXVECTOR3(0.0f, 300.0f, 0.0f)
-	);
-
-	// サブライト（空の反射光）: 弱い青色、上から
-	CLight::AddLight(
-		D3DLIGHT_DIRECTIONAL,
-		D3DXCOLOR(0.3f, 0.4f, 0.8f, 1.0f),   // 薄い青
-		D3DXVECTOR3(0.0f, -1.0f, 0.0f),
-		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
-	);
-
-	// 環境をほんのり赤みで包む（逆光補助）
-	CLight::AddLight(
-		D3DLIGHT_DIRECTIONAL,
-		D3DXCOLOR(0.7f, 0.3f, 0.2f, 1.0f),
-		D3DXVECTOR3(-0.3f, 0.0f, -0.7f),
-		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
-	);
-
-	// 残りは補助的な淡い光（やや白寄り）
-	CLight::AddLight(
-		D3DLIGHT_DIRECTIONAL,
-		D3DXCOLOR(0.4f, 0.35f, 0.3f, 1.0f),
-		D3DXVECTOR3(0.0f, 0.0f, 1.0f),
-		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
-	);
-
-	CLight::AddLight(
-		D3DLIGHT_DIRECTIONAL,
-		D3DXCOLOR(0.3f, 0.25f, 0.2f, 1.0f),
-		D3DXVECTOR3(0.0f, 0.0f, -1.0f),
-		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
-	);
-}
-//=============================================================================
 // デバイスリセット通知
 //=============================================================================
 void CGame::OnDeviceReset(void)
 {
-	//// ライトの再設定処理
-	//ResetLight();
-
+	// ゲームライトの更新処理
 	UpdateLight();
 }
 //=============================================================================
