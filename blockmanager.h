@@ -34,7 +34,25 @@ public:
     void LoadFromJson(const char* filename);
     void LoadConfig(const std::string& filename);
     void GenerateRandomMap(int seed);
+    void GenerateRiver(int GRID_X, int GRID_Z, float AREA_SIZE,
+        float offsetX, float offsetZ, std::vector<D3DXVECTOR3>& outWaterPositions);
+    void GenerateClusters(int GRID_X, int GRID_Z, float AREA_SIZE,
+        float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& waterPositions,
+        std::vector<D3DXVECTOR3>& torchPositions);
+    void CreateClusterElement(const D3DXVECTOR3& pos, float AREA_SIZE,
+        int GRID_X, int GRID_Z, float offsetX, float offsetZ,
+        const std::vector<D3DXVECTOR3>& waterPositions, std::vector<D3DXVECTOR3>& torchPositions,
+        int& torchRemaining);
+    void EnsureTorchCount(int GRID_X, int GRID_Z, float AREA_SIZE,
+        float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& waterPositions,
+        std::vector<D3DXVECTOR3>& torchPositions);
+    void CreateGrassCluster(const D3DXVECTOR3& centerPos, float AREA_SIZE,
+        int GRID_X, int GRID_Z, float offsetX, float offsetZ,
+        const std::vector<D3DXVECTOR3>& waterPositions);
+    bool IsCollidingWithWater(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& waterPositions);
+    void ApplyRandomGrassTransform(CBlock* block);
     void FillFloor(int GRID_X, int GRID_Z, float AREA_SIZE);
+
     void UpdateLight(void) 
     {
         for (const auto& block : m_blocks)

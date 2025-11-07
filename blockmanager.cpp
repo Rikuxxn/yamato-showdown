@@ -925,268 +925,221 @@ void CBlockManager::GenerateRandomMap(int seed)
 	const float offsetX = -(GRID_X * AREA_SIZE) / 2.0f + AREA_SIZE / 2.0f;
 	const float offsetZ = -(GRID_Z * AREA_SIZE) / 2.0f + AREA_SIZE / 2.0f;
 
-	// クラスタの数
-	const int clusterCount = 8;
+	// --- 川生成 ---
+	std::vector<D3DXVECTOR3> waterPositions;
+	GenerateRiver(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions);
 
-	// 石灯籠の残り数
-	int torchRemaining = 2 ;
-
-	// 灯籠の位置を保存するリスト
+	// --- クラスタ生成 ---
 	std::vector<D3DXVECTOR3> torchPositions;
+	GenerateClusters(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions, torchPositions);
 
-	// 壁から離すマス
+	// --- 灯籠補充 ---
+	EnsureTorchCount(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions, torchPositions);
+
+	// 床を敷き詰める処理
+	FillFloor(GRID_X, GRID_Z, AREA_SIZE); 
+}
+//=============================================================================
+// 川生成処理
+//=============================================================================
+void CBlockManager::GenerateRiver(int GRID_X, int GRID_Z, float AREA_SIZE,
+	float offsetX, float offsetZ, std::vector<D3DXVECTOR3>& outWaterPositions)
+{
+	// 川の横幅
+	const int riverWidth = 2;
+
+	// 空白数
 	int margin = 0;
 
-	// 進行方向（0 = X軸方向に横断, 1 = Z軸方向に縦断）
 	bool verticalRiver = (rand() % 2 == 0);
-
-	int z = margin + rand() % (GRID_Z - 2 * margin);
 	int x = margin + rand() % (GRID_X - 2 * margin);
-
-	// --- 川生成 ---
-	const int riverWidth = 2;
+	int z = margin + rand() % (GRID_Z - 2 * margin);
 
 	if (!verticalRiver)
 	{
-		// --- X方向に横断 ---
+		// X方向
 		for (int i = margin; i < GRID_X - margin; i++)
 		{
 			for (int w = 0; w < riverWidth; w++)
 			{
 				D3DXVECTOR3 pos(offsetX + i * AREA_SIZE, -48.0f, offsetZ + (z + w) * AREA_SIZE);
+
+				// 川の生成
 				CreateBlock(CBlock::TYPE_WATER, pos);
+
+				outWaterPositions.push_back(pos);
 			}
 
-			// Z方向蛇行
-			z += (rand() % 3) - 1; // -1,0,+1
-
-			if (z < margin)
-			{
-				z = margin;
-			}
-			if (z >= GRID_Z - margin - riverWidth)
-			{
-				z = GRID_Z - margin - riverWidth - 1;
-			}
+			z += (rand() % 3) - 1;
+			z = std::clamp(z, margin, GRID_Z - margin - riverWidth - 1);
 		}
 	}
 	else
 	{
-		// --- Z方向に縦断 ---
+		// Z方向
 		for (int i = margin; i < GRID_Z - margin; i++)
 		{
 			for (int w = 0; w < riverWidth; w++)
 			{
 				D3DXVECTOR3 pos(offsetX + (x + w) * AREA_SIZE, -48.0f, offsetZ + i * AREA_SIZE);
+
+				// 川の生成
 				CreateBlock(CBlock::TYPE_WATER, pos);
+
+				outWaterPositions.push_back(pos);
 			}
 
-			// X方向蛇行
 			x += (rand() % 3) - 1;
-
-			if (x < margin)
-			{
-				x = margin;
-			}
-			if (x >= GRID_X - margin - riverWidth)
-			{
-				x = GRID_X - margin - riverWidth - 1;
-			}
+			x = std::clamp(x, margin, GRID_X - margin - riverWidth - 1);
 		}
 	}
+}
+//=============================================================================
+// クラスタ生成処理
+//=============================================================================
+void CBlockManager::GenerateClusters(int GRID_X, int GRID_Z, float AREA_SIZE,
+	float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& waterPositions,
+	std::vector<D3DXVECTOR3>& torchPositions)
+{
+	// クラスター数
+	const int clusterCount = 8;
 
-	// 既存水ブロック座標の取得
-	std::vector<D3DXVECTOR3> waterPositions;
-	for (auto block : m_blocks)
-	{
-		if (block->GetType() == CBlock::TYPE_WATER)
-		{
-			waterPositions.push_back(block->GetPos());
-		}
-	}
+	// 灯籠の数
+	int torchRemaining = 3;
 
 	for (int i = 0; i < clusterCount; i++)
 	{
-		// クラスタの中心座標
 		float centerX = offsetX + (rand() % GRID_X) * AREA_SIZE;
 		float centerZ = offsetZ + (rand() % GRID_Z) * AREA_SIZE;
-
-		// クラスタの範囲（島の広がり）
 		float radius = 50.0f + rand() % 100;
-
-		// クラスタ内に複数配置
 		int count = 12 + rand() % 10;
 
 		for (int j = 0; j < count; j++)
 		{
-			float angle = (rand() % 360) * D3DX_PI / 180.0f;
-			float dist = (rand() / (float)RAND_MAX) * radius;
-
 			D3DXVECTOR3 pos(
-				centerX + cosf(angle) * dist,
+				centerX + cosf((rand() % 360) * D3DX_PI / 180.0f) * ((rand() / (float)RAND_MAX) * radius),
 				0.0f,
-				centerZ + sinf(angle) * dist
+				centerZ + sinf((rand() % 360) * D3DX_PI / 180.0f) * ((rand() / (float)RAND_MAX) * radius)
 			);
 
-			// 外周に近いなら「茂み」、内側なら「灯籠 or 何もなし」
-			float distFromCenterX = fabsf(pos.x);
-			float distFromCenterZ = fabsf(pos.z);
-			float halfWidth = (GRID_X * AREA_SIZE) / 2.0f * 0.5f; // 外周判定閾値
+			// クラスタの要素生成
+			CreateClusterElement(pos, AREA_SIZE, GRID_X, GRID_Z, offsetX, offsetZ, waterPositions, torchPositions, torchRemaining);
+		}
+	}
+}
+//=============================================================================
+// クラスタの要素生成処理
+//=============================================================================
+void CBlockManager::CreateClusterElement(const D3DXVECTOR3& pos, float AREA_SIZE,
+	int GRID_X, int GRID_Z, float offsetX, float offsetZ,
+	const std::vector<D3DXVECTOR3>& waterPositions, std::vector<D3DXVECTOR3>& torchPositions,
+	int& torchRemaining)
+{
+	const float halfWidth = (GRID_X * AREA_SIZE) / 4.0f;
 
-			CBlock::TYPE type = CBlock::TYPE_GRASS; // デフォルトは茂み
+	float distX = fabsf(pos.x);
+	float distZ = fabsf(pos.z);
 
-			// 外周 → 茂み
-			if (distFromCenterX > halfWidth * 0.6f || distFromCenterZ > halfWidth * 0.6f)
+	// 外周 → 草
+	if (distX > halfWidth * 0.6f || distZ > halfWidth * 0.6f)
+	{
+		CreateGrassCluster(pos, AREA_SIZE, GRID_X, GRID_Z, offsetX, offsetZ, waterPositions);
+		return;
+	}
+
+	// 灯籠生成判定
+	CBlock::TYPE type = CBlock::TYPE_GRASS;
+	if (torchRemaining > 0)
+	{
+		const float MIN_TORCH_DIST = 3.0f * AREA_SIZE;
+		bool tooClose = false;
+		for (auto& t : torchPositions)
+		{
+			float dx = t.x - pos.x;
+			float dz = t.z - pos.z;
+			if (dx * dx + dz * dz < (MIN_TORCH_DIST * MIN_TORCH_DIST))
 			{
-				// 草を連続配置
-				int grassLength = 2 + rand() % 5;
-				bool horizontal = rand() % 2;    // X方向かZ方向かランダム
-
-				float minX = offsetX;
-				float maxX = offsetX + (GRID_X - 1) * AREA_SIZE;
-				float minZ = offsetZ;
-				float maxZ = offsetZ + (GRID_Z - 1) * AREA_SIZE;
-
-				for (int k = 0; k < grassLength; k++)
-				{
-					D3DXVECTOR3 grassPos = pos;
-					if (horizontal)
-					{
-						grassPos.x += k * AREA_SIZE;
-					}
-					else
-					{
-						grassPos.z += k * AREA_SIZE;
-					}
-
-					// マップ内チェック
-					if (grassPos.x < minX || grassPos.x > maxX ||
-						grassPos.z < minZ || grassPos.z > maxZ)
-					{
-						continue;
-					}
-
-					// 水と衝突していないか
-					bool collidesWithWater = false;
-					for (auto wp : waterPositions)
-					{
-						if (fabs(wp.x - grassPos.x) < AREA_SIZE * 0.5f &&
-							fabs(wp.z - grassPos.z) < AREA_SIZE * 0.5f)
-						{
-							collidesWithWater = true;
-							break;
-						}
-					}
-
-					if (collidesWithWater)
-					{
-						continue;
-					}
-
-					CBlock* grassBlock = CreateBlock(CBlock::TYPE_GRASS, grassPos);
-
-					if (!grassBlock)
-					{
-						continue;
-					}
-
-					float scaleX = 1.0f + (rand() / (float)RAND_MAX) * 0.8f;
-					float scaleY = 1.3f + (rand() / (float)RAND_MAX) * 0.5f;
-
-					// サイズの設定
-					grassBlock->SetSize(D3DXVECTOR3(scaleX, scaleY, scaleX));
-
-					float rotY = (rand() % 360) * D3DX_PI / 180.0f;
-
-					// 向きの設定
-					grassBlock->SetRot(D3DXVECTOR3(0, rotY, 0));
-				}
-
-				continue; // このクラスタ要素は処理済み
+				tooClose = true;
+				break;
 			}
-			else if (torchRemaining > 0)
-			{
-				// 灯籠同士の距離チェック（全方向）
-				bool tooClose = false;
-				const float MIN_TORCH_DISTANCE = 5.0f * AREA_SIZE; // 5マス分
+		}
 
-				for (auto& tpos : torchPositions)
-				{
-					float dx = tpos.x - pos.x;
-					float dz = tpos.z - pos.z;
-					float distSq = dx * dx + dz * dz;
-
-					if (distSq < (MIN_TORCH_DISTANCE * MIN_TORCH_DISTANCE))
-					{
-						tooClose = true;
-						break;
-					}
-				}
-
-				if (!tooClose)
-				{
-					type = CBlock::TYPE_TORCH_01;
-					torchRemaining--;
-					torchPositions.push_back(pos); // 配置記録
-				}
-				else
-				{
-					type = CBlock::TYPE_GRASS;
-				}
-			}
-
-			// 水と重ならない場合のみ生成
-			bool collidesWithWater = false;
-			for (auto wp : waterPositions)
-			{
-				if (fabs(wp.x - pos.x) < AREA_SIZE * 0.5f &&
-					fabs(wp.z - pos.z) < AREA_SIZE * 0.5f)
-				{
-					collidesWithWater = true;
-					break;
-				}
-			}
-
-			if (collidesWithWater)
-			{
-				continue;
-			}
-
-			// 生成
-			CBlock* block = CreateBlock(type, pos);
-
-			if (!block)
-			{
-				continue;
-			}
-
-			// 石灯籠のオフセット
-			if (type == CBlock::TYPE_TORCH_01)
-			{
-				D3DXVECTOR3 newPos = block->GetPos();
-				newPos.y += 35.0f;
-				block->SetPos(newPos);
-			}
-
-			// 茂みのランダム調整
-			if (type == CBlock::TYPE_GRASS)
-			{
-				// サイズをランダム設定
-				float scaleX = 1.0f + (rand() / (float)RAND_MAX) * 0.8f; // 1.0～1.8
-				float scaleY = 1.3f + (rand() / (float)RAND_MAX) * 0.3f; // 1.3～1.6
-
-				float scaleZ = scaleX;
-				block->SetSize(D3DXVECTOR3(scaleX, scaleY, scaleZ));
-
-				// Y軸回転をランダムに設定
-				float rotY = (rand() % 360) * D3DX_PI / 180.0f;
-				block->SetRot(D3DXVECTOR3(0.0f, rotY, 0.0f));
-			}
+		// 近くなかったら
+		if (!tooClose)
+		{
+			type = CBlock::TYPE_TORCH_01;
+			torchRemaining--;
+			torchPositions.push_back(pos);
 		}
 	}
 
-	// 床を敷き詰める処理
-	FillFloor(GRID_X, GRID_Z, AREA_SIZE); 
+	// 水上でなければ生成
+	if (!IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+	{
+		CBlock* block = CreateBlock(type, pos);
+		if (!block) return;
+
+		if (type == CBlock::TYPE_TORCH_01)
+		{
+			D3DXVECTOR3 p = block->GetPos();
+			p.y += 35.0f;
+			block->SetPos(p);
+		}
+		else if (type == CBlock::TYPE_GRASS)
+		{
+			ApplyRandomGrassTransform(block);
+		}
+	}
+}
+//=============================================================================
+// 灯籠補充処理
+//=============================================================================
+void CBlockManager::EnsureTorchCount(int GRID_X, int GRID_Z, float AREA_SIZE,
+	float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& waterPositions,
+	std::vector<D3DXVECTOR3>& torchPositions)
+{
+	// 灯籠同士の最低距離
+	const float MIN_TORCH_DISTANCE = 5.0f * AREA_SIZE;
+
+	while ((int)torchPositions.size() < 3)
+	{
+		float randX = offsetX + (rand() % GRID_X) * AREA_SIZE;
+		float randZ = offsetZ + (rand() % GRID_Z) * AREA_SIZE;
+		D3DXVECTOR3 pos(randX, 0.0f, randZ);
+
+		if (IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+		{
+			continue;
+		}
+
+		bool tooClose = false;
+		for (auto& t : torchPositions)
+		{
+			float dx = t.x - pos.x;
+			float dz = t.z - pos.z;
+			if (dx * dx + dz * dz < (MIN_TORCH_DISTANCE * MIN_TORCH_DISTANCE))
+			{
+				tooClose = true;
+				break;
+			}
+		}
+
+		// 近すぎたら飛ばす
+		if (tooClose)
+		{
+			continue;
+		}
+
+		CBlock* torch = CreateBlock(CBlock::TYPE_TORCH_01, pos);
+
+		if (torch)
+		{
+			D3DXVECTOR3 offPos = torch->GetPos();
+			offPos.y += 35.0f;
+			torch->SetPos(offPos);
+			torchPositions.push_back(pos);
+		}
+	}
 }
 //=============================================================================
 // 床を敷き詰める処理
@@ -1236,6 +1189,87 @@ void CBlockManager::FillFloor(int GRID_X, int GRID_Z, float AREA_SIZE)
 			}
 		}
 	}
+}
+//=============================================================================
+// 外周部に茂みの連続クラスタを生成
+//=============================================================================
+void CBlockManager::CreateGrassCluster(const D3DXVECTOR3& centerPos, float AREA_SIZE,
+	int GRID_X, int GRID_Z, float offsetX, float offsetZ,
+	const std::vector<D3DXVECTOR3>& waterPositions)
+{
+	int grassLength = 2 + rand() % 5;    // 草を連続配置する数
+	bool horizontal = (rand() % 2 == 0); // X方向 or Z方向
+
+	float minX = offsetX;
+	float maxX = offsetX + (GRID_X - 1) * AREA_SIZE;
+	float minZ = offsetZ;
+	float maxZ = offsetZ + (GRID_Z - 1) * AREA_SIZE;
+
+	for (int k = 0; k < grassLength; k++)
+	{
+		D3DXVECTOR3 grassPos = centerPos;
+		if (horizontal)
+		{
+			grassPos.x += k * AREA_SIZE;
+		}
+		else
+		{
+			grassPos.z += k * AREA_SIZE;
+		}
+
+		// マップ内チェック
+		if (grassPos.x < minX || grassPos.x > maxX ||
+			grassPos.z < minZ || grassPos.z > maxZ)
+		{
+			continue;
+		}
+
+		// 水と衝突していないかチェック
+		if (IsCollidingWithWater(grassPos, AREA_SIZE, waterPositions))
+		{
+			continue;
+		}
+
+		// 草ブロック生成
+		CBlock* grassBlock = CreateBlock(CBlock::TYPE_GRASS, grassPos);
+		if (!grassBlock)
+		{
+			continue;
+		}
+
+		// ランダムなスケール・回転を設定
+		ApplyRandomGrassTransform(grassBlock);
+	}
+}
+//=============================================================================
+// 水との重なり判定処理
+//=============================================================================
+bool CBlockManager::IsCollidingWithWater(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& waterPositions)
+{
+	for (auto& wp : waterPositions)
+	{
+		if (fabs(wp.x - pos.x) < AREA_SIZE * 0.5f &&
+			fabs(wp.z - pos.z) < AREA_SIZE * 0.5f)
+		{
+			// 重なった
+			return true;
+		}
+	}
+
+	// 重なっていない
+	return false;
+}
+//=============================================================================
+// 草の変形処理
+//=============================================================================
+void CBlockManager::ApplyRandomGrassTransform(CBlock* block)
+{
+	float scaleX = 1.0f + (rand() / (float)RAND_MAX) * 0.8f;
+	float scaleY = 1.3f + (rand() / (float)RAND_MAX) * 0.3f;
+	float rotY = (rand() % 360) * D3DX_PI / 180.0f;
+
+	block->SetSize(D3DXVECTOR3(scaleX, scaleY, scaleX));
+	block->SetRot(D3DXVECTOR3(0.0f, rotY, 0.0f));
 }
 //=============================================================================
 // タイプからXファイルパスを取得

@@ -13,6 +13,7 @@
 #include "game.h"
 #include "easing.h"
 #include "player.h"
+#include "enemy.h"
 
 //=============================================================================
 // ƒRƒ“ƒXƒgƒ‰ƒNƒ^
@@ -37,38 +38,55 @@ void CGrassBlock::Update(void)
 	// ƒuƒƒbƒN‚ÌXVˆ—
 	CBlock::Update();
 
-	if (!CGame::GetPlayer())
+	D3DXVECTOR3 thisPos = GetPos();
+	float distMax = 60.0f;
+	float fMaxTilt = D3DXToRadian(60);
+
+	// === ƒvƒŒƒCƒ„[‚Æ“G‚Ì’†‚Åˆê”Ô‹ß‚¢‚à‚Ì‚ð’T‚· ===
+	float nearestDist = FLT_MAX;
+	D3DXVECTOR3 nearestDiff(0, 0, 0);
+
+	// --- ƒvƒŒƒCƒ„[ ---
+	if (CGame::GetPlayer())
 	{
-		return;
+		D3DXVECTOR3 diff = CGame::GetPlayer()->GetPos() - thisPos;
+		float dist = D3DXVec3Length(&diff);
+		if (dist < nearestDist)
+		{
+			nearestDist = dist;
+			nearestDiff = diff;
+		}
 	}
 
-	// ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ðŽæ“¾
-	D3DXVECTOR3 playerPos = CGame::GetPlayer()->GetPos();
+	// --- “G ---
+	if (CGame::GetEnemy())
+	{
+		D3DXVECTOR3 diff = CGame::GetEnemy()->GetPos() - thisPos;
+		float dist = D3DXVec3Length(&diff);
+		if (dist < nearestDist)
+		{
+			nearestDist = dist;
+			nearestDiff = diff;
+		}
+	}
 
-	// ‘‚ÆƒvƒŒƒCƒ„[‚Ì‹——£
-	D3DXVECTOR3 diff = playerPos - GetPos();
-	float dist = D3DXVec3Length(&diff);
-
+	// === ‘‚ÌŒX‚«ŒvŽZ ===
 	D3DXVECTOR3 rot = GetRot();
-	float distMax = 60.0f;				// ‚±‚Ì‹——£ˆÈ“à‚È‚çŒX‚­
-	float fMaxTilt = D3DXToRadian(60);  // Å‘å‚ÌŒX‚«Šp“x
+	D3DXVECTOR3 targetRot(0, 0, 0);
 
-	// –Ú•W‚Ì‰ñ“]Šp“x
-	D3DXVECTOR3 targetRot = D3DXVECTOR3(0, 0, 0);
-
-	if (dist < distMax) // ”ÍˆÍ“à
+	if (nearestDist < distMax) 
 	{
 		// ³‹K‰»
-		D3DXVec3Normalize(&diff, &diff);
+		D3DXVec3Normalize(&nearestDiff, &nearestDiff);
 		
 		// ‹——£‚É‰ž‚¶‚½Š„‡
-		float t = 1.0f - (dist / distMax);
+		float t = 1.0f - (nearestDist / distMax);
 
 		// ŒX‚«Šp“x = Å‘åŠp“x ~ Š„‡
 		float tilt = fMaxTilt * t;
 
-		rot.x = -diff.z * tilt;
-		rot.z = diff.x * tilt;
+		rot.x = -nearestDiff.z * tilt;
+		rot.z = nearestDiff.x * tilt;
 	}
 
 	// *** ƒoƒl { ƒ_ƒ“ƒsƒ“ƒO ***

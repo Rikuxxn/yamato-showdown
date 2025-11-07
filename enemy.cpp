@@ -10,7 +10,7 @@
 //*****************************************************************************
 #include "enemy.h"
 #include "guage.h"
-
+#include "enemyState.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -159,7 +159,7 @@ void CEnemy::Update(void)
 	if (pKeyboard->GetTrigger(DIK_3))
 	{
 		// ダメージ処理
-		Damage(1.0f);
+		Damage(50.0f);
 	}
 	else if (pKeyboard->GetTrigger(DIK_4))
 	{
@@ -266,4 +266,29 @@ D3DXVECTOR3 CEnemy::GetForward(void)
 	D3DXVec3Normalize(&forward, &forward);
 
 	return forward;
+}
+//=============================================================================
+// ダメージ処理
+//=============================================================================
+void CEnemy::Damage(float fDamage)
+{
+	if (!m_pMotion->IsCurrentMotion(DAMAGE))
+	{
+		// まず共通のHP処理
+		CCharacter::Damage(fDamage);
+	}
+
+	if (!m_pMotion->IsCurrentMotion(ACCUMULATION))
+	{
+		// ダメージステートへ
+		m_stateMachine.ChangeState<CEnemy_DamageState>();
+	}
+
+	// 死亡時
+	if (IsDead())
+	{
+		// 死亡状態
+		m_stateMachine.ChangeState<CEnemy_DeadState>();
+		return;
+	}
 }

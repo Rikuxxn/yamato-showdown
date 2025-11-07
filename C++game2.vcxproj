@@ -241,6 +241,7 @@
     <ClInclude Include="effect.h" />
     <ClInclude Include="enemy.h" />
     <ClInclude Include="enemyAI.h" />
+    <ClInclude Include="enemyState.h" />
     <ClInclude Include="fade.h" />
     <ClInclude Include="FileDialogUtils.h" />
     <ClInclude Include="game.h" />
@@ -276,6 +277,7 @@
     <ClInclude Include="pausemanager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="playerState.h" />
     <ClInclude Include="rank.h" />
     <ClInclude Include="ranking.h" />
     <ClInclude Include="rankingmanager.h" />

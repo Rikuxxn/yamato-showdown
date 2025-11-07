@@ -14,6 +14,7 @@
 #include "guage.h"
 #include "manager.h"
 #include "enemy.h"
+#include "playerState.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -520,5 +521,27 @@ InputData CPlayer::GatherInput(void)
 	}
 
 	return input;
+}
+//=============================================================================
+// ダメージ処理
+//=============================================================================
+void CPlayer::Damage(float fDamage)
+{
+	if (!m_pMotion->IsCurrentMotion(DAMAGE))
+	{
+		// まず共通のHP処理
+		CCharacter::Damage(fDamage);
+
+		// ダメージステートへ
+		m_stateMachine.ChangeState<CPlayer_DamageState>();
+	}
+
+	// 死亡時
+	if (IsDead())
+	{
+		//// 死亡状態
+		//m_stateMachine.ChangeState<CPlayer_DeadState>();
+		return;
+	}
 }
 

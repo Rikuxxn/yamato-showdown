@@ -116,16 +116,16 @@ int CLight::AddLight(D3DLIGHTTYPE type, const D3DXCOLOR& diffuse, const D3DXVECT
         lightInfo.light.Attenuation0 = 0.0f;
         lightInfo.light.Attenuation1 = 0.006f;
         lightInfo.light.Attenuation2 = 0.0f;
-        lightInfo.light.Range = 230.0f;
+        lightInfo.light.Range = 130.0f;
     }
     else if (type == D3DLIGHT_SPOT)
     {
-        lightInfo.light.Range = 1000.0f;
+        lightInfo.light.Range = 100.0f;
         lightInfo.light.Theta = D3DXToRadian(70.0f);  // 明るく照らす範囲（中心）
         lightInfo.light.Phi = D3DXToRadian(95.0f);  // 減衰していく外側        
         lightInfo.light.Falloff = 1.0f;
         lightInfo.light.Attenuation0 = 1.0f;
-        lightInfo.light.Attenuation1 = 0.0005f;    // 緩やかな減衰
+        lightInfo.light.Attenuation1 = 0.003f;    // 緩やかな減衰
         lightInfo.light.Attenuation2 = 0.0f;
     }
 

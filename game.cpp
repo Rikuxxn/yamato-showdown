@@ -70,9 +70,6 @@ HRESULT CGame::Init(void)
 	// ライトの初期化
 	m_pLight->Init();
 
-	//// ライトの再設定処理
-	//ResetLight();
-
 	CCharacterManager characterManager;
 
 	// プレイヤーの生成
@@ -194,7 +191,7 @@ void CGame::Update(void)
 	}
 
 	// 敵を倒したらクリア
-	if (pFade->GetFade() == CFade::FADE_NONE && CGame::GetEnemy()->IsDead())
+	if (pFade->GetFade() == CFade::FADE_NONE && CGame::GetEnemy()->IsDeath())
 	{
 		// ランキングに登録
 		m_pRankingManager->AddRecordWithLimit(3, 0, m_pTime->GetMinutes(), m_pTime->GetnSeconds());
