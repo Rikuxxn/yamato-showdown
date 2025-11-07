@@ -73,12 +73,12 @@ HRESULT CGame::Init(void)
 	CCharacterManager characterManager;
 
 	// プレイヤーの生成
-	m_pPlayer = CPlayer::Create(D3DXVECTOR3(0.0f, 100.0f, -300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	m_pPlayer = CPlayer::Create(D3DXVECTOR3(0.0f, 10.0f, -300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	//m_pPlayer = CPlayer::Create(D3DXVECTOR3(-660.0f, 100.0f, -3898.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	characterManager.AddCharacter(m_pPlayer);
 
 	// 敵の生成
-	m_pEnemy = CEnemy::Create(D3DXVECTOR3(0.0f, 130.0f, 300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	m_pEnemy = CEnemy::Create(D3DXVECTOR3(0.0f, 10.0f, 300.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	characterManager.AddCharacter(m_pEnemy);
 
 	m_nSeed = (int)time(nullptr);  // シード値をランダム設定

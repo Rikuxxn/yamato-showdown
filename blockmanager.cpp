@@ -917,8 +917,8 @@ void CBlockManager::GenerateRandomMap(int seed)
 	LoadFromJson("data/wall_info.json");
 
 	// --- 生成パラメータ ---
-	const int GRID_X = 12;
-	const int GRID_Z = 12;
+	const int GRID_X = 10;
+	const int GRID_Z = 10;
 	const float AREA_SIZE = 80.0f; // 1エリアの広さ
 
 	// 原点を中心に配置するためのオフセット計算

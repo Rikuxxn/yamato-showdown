@@ -45,6 +45,7 @@ public:
 		//ATTACK_02,			// çUåÇ2(ãﬂãóó£)
 		DAMAGE,
 		DEATH,
+		SLIDEMOVE,
 		MAX
 	}ENEMY_MOTION;
 
@@ -57,6 +58,7 @@ public:
 		AI_ACCUMULATE,
 		AI_ATTACK_01,
 		AI_ATTACK_02,
+		AI_SLIDEMOVE,
 		AI_MAX
 	}EEnemyAction;
 

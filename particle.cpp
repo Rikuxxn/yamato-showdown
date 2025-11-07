@@ -232,7 +232,7 @@ CAuraParticle::~CAuraParticle()
 HRESULT CAuraParticle::Init(void)
 {
 	// テクスチャを設定しておく
-	SetPath("data/TEXTURE/treasure_effect.png");
+	SetPath("data/TEXTURE/effect000.jpg");
 
 	// パーティクルの初期化処理
 	CParticle::Init();
@@ -252,24 +252,33 @@ void CAuraParticle::Update(void)
 		EffectDesc desc;
 
 		// テクスチャの指定
-		desc.path = "data/TEXTURE/treasure_effect.png";
+		desc.path = "data/TEXTURE/effect000.jpg";
 
-		// 位置
-		desc.pos = GetPos();
-
-		// ランダムな角度で横に広がる
+		// 半径を決めてランダム位置にスポーン
+		float radius = 40.0f; // この範囲から出す
 		float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
-		float speed = (rand() % 150) / 300.0f + 0.2f;
+		float height = (rand() % 60) - 30.0f; // -30～30の高さ
 
-		desc.move.x = cosf(angle) * speed;
-		desc.move.z = sinf(angle) * speed;
-		desc.move.y = (rand() % 300) / 100.0f + 0.9f; // 上方向
+		// 生成位置
+		desc.pos;
+		desc.pos.x = GetPos().x + cosf(angle) * radius;
+		desc.pos.z = GetPos().z + sinf(angle) * radius;
+		desc.pos.y = GetPos().y + height;
+
+		// ターゲットに向かう方向ベクトル
+		D3DXVECTOR3 dir = GetPos() - desc.pos;
+		D3DXVec3Normalize(&dir, &dir);
+
+		// 速度
+		float speed = (rand() % 2) + 0.5f;
+
+		desc.move = dir * speed;
 
 		// 色の設定
 		desc.col = GetCol();
 
 		// 半径の設定
-		desc.fRadius = 35.0f + (rand() % 40);
+		desc.fRadius = 8.0f + (rand() % 8);
 
 		// 寿命の設定
 		desc.nLife = GetLife();
@@ -278,7 +287,7 @@ void CAuraParticle::Update(void)
 		desc.fGravity = 0.0f;
 
 		// 半径の減衰量の設定
-		desc.fDecRadius = 1.5f;
+		desc.fDecRadius = 0.5f;
 
 		// エフェクトの設定
 		CEffect::Create(desc);

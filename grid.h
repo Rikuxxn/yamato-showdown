@@ -22,7 +22,7 @@ public:
     void AddLine(const D3DXVECTOR3& p1, const D3DXVECTOR3& p2, D3DCOLOR col);
 
 private:
-    static constexpr int SIZE       = 6;   // îºåa
+    static constexpr int SIZE       = 5;   // îºåa
     static constexpr float SPACING  = 80.0f;// É}ÉXä‘äu
 
     struct CUSTOMVERTEX

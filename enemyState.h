@@ -4,6 +4,7 @@
 // Author : RIKU TANEKAWA
 //
 //=============================================================================
+#include "particle.h"
 #ifndef _ENEMYSTATE_H_
 #define _ENEMYSTATE_H_
 
@@ -20,7 +21,7 @@ class CEnemy_AttackState1;
 class CEnemy_AttackState2;
 class CEnemy_DamageState;
 class CEnemy_DeadState;
-
+class CEnemy_SlideMoveState;
 
 //*****************************************************************************
 // 待機状態
@@ -222,6 +223,13 @@ public:
 
 	void OnUpdate(CEnemy* pEnemy)override
 	{
+		D3DXVECTOR3 spawnPos = pEnemy->GetPos();
+		spawnPos.y += 30.0f;
+
+		// パーティクル生成
+		CParticle::Create<CAuraParticle>(INIT_VEC3, spawnPos, D3DXCOLOR(0.7f, 0.1f, 0.1f, 0.9f), 50, 2);
+		CParticle::Create<CAuraParticle>(INIT_VEC3, spawnPos, D3DXCOLOR(0.8f, 0.4f, 0.1f, 0.8f), 50, 1);
+
 		D3DXVECTOR3 move = pEnemy->GetMove();
 
 		move *= 0.95f; // 減速率
@@ -239,8 +247,17 @@ public:
 
 		if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::ACCUMULATION))
 		{// 溜めモーションが終わっていたら
-			// 攻撃状態1
-			m_pMachine->ChangeState<CEnemy_AttackState1>();
+
+			if (pEnemy->GetHp() <= 50.0f)
+			{
+				// スライド移動状態
+				m_pMachine->ChangeState<CEnemy_SlideMoveState>();
+			}
+			else
+			{
+				// 攻撃状態1
+				m_pMachine->ChangeState<CEnemy_AttackState1>();
+			}
 
 			return;
 		}
@@ -289,7 +306,7 @@ public:
 			pEnemy->SetRotDest(rotDest);
 
 			// 補間して回転
-			pEnemy->UpdateRotation(0.1f);
+			pEnemy->UpdateRotation(0.5f);
 		}
 
 		// 向いている方向にスライドさせるため、プレイヤー方向ベクトルを取得
@@ -363,6 +380,7 @@ public:
 
 		if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::ATTACK_01))
 		{// 攻撃モーションが終わっていたら
+
 			// 待機状態
 			m_pMachine->ChangeState<CEnemy_StandState>();
 
@@ -509,6 +527,87 @@ public:
 	}
 
 private:
+};
+
+//*****************************************************************************
+// スライド移動状態
+//*****************************************************************************
+class CEnemy_SlideMoveState :public StateBase<CEnemy>
+{
+public:
+
+	void OnStart(CEnemy* pEnemy)override
+	{
+		// スライド移動モーション
+		pEnemy->GetMotion()->StartBlendMotion(CEnemy::SLIDEMOVE, 10);
+
+		// 向いている方向
+		D3DXVECTOR3 dir = pEnemy->GetForward();
+
+		// 正規化
+		D3DXVec3Normalize(&dir, &dir);
+
+		float backPower = 3000.0f;// スライドパワー
+
+		D3DXVECTOR3 move = dir * backPower;
+
+		// 現在の移動量に上書き
+		pEnemy->SetMove(move);
+
+		// 物理速度にも即反映
+		btVector3 velocity = pEnemy->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setY(-100.3f);// 段差で飛ばないように上の力を下げる
+		velocity.setZ(move.z);
+		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
+	}
+
+	void OnUpdate(CEnemy* pEnemy)override
+	{
+		// モーションの進行度を取得
+		float motionRate = pEnemy->GetMotion()->GetMotionRate(); // 0.0～1.0
+		D3DXVECTOR3 move = pEnemy->GetMove();
+
+		// モーション前半だけ前方移動を維持
+		if (motionRate < 0.2f)
+		{
+			D3DXVECTOR3 forwardDir = pEnemy->GetForward();
+			D3DXVec3Normalize(&forwardDir, &forwardDir);
+
+			float forwardPower = 200.0f; // 滑る速度
+			move = forwardDir * forwardPower;
+		}
+		else
+		{
+			move *= 0.82f; // 減速率
+			if (fabsf(move.x) < 0.01f) move.x = 0;
+			if (fabsf(move.z) < 0.01f) move.z = 0;
+		}
+
+		// 移動量を設定
+		pEnemy->SetMove(move);
+
+		// リジッドボディに反映
+		btVector3 velocity = pEnemy->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setZ(move.z);
+		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
+
+		if (pEnemy->GetMotion()->IsAttacking(CEnemy::SLIDEMOVE, 1, 1, 0, 40))
+		//if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::SLIDEMOVE))
+		{
+			// 攻撃状態1
+			m_pMachine->ChangeState<CEnemy_AttackState1>();
+		}
+	}
+
+	void OnExit(CEnemy* /*pEnemy*/)override
+	{
+
+	}
+
+private:
+
 };
 
 #endif

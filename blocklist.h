@@ -29,7 +29,7 @@ public:
 
 	bool IsDynamicBlock(void) const override { return true; }
 	btVector3 GetAngularFactor(void) const { return btVector3(1.0f, 1.0f, 1.0f); }
-	btScalar GetMass(void) const { return 3.0f; }  // Ž¿—Ê‚ÌŽæ“¾
+	btScalar GetMass(void) const { return 1.0f; }  // Ž¿—Ê‚ÌŽæ“¾
 
 private:
 	static constexpr float RESPAWN_HEIGHT = -810.0f;

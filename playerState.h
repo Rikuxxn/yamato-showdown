@@ -201,7 +201,7 @@ public:
 			pPlayer->SetRotDest(rotDest);
 
 			// 補間して回転
-			pPlayer->UpdateRotation(0.1f);
+			pPlayer->UpdateRotation(0.5f);
 		}
 		else
 		{
@@ -345,7 +345,7 @@ public:
 		pPlayer->SetMove(move);
 
 		// 上方向初速
-		m_verticalVelocity = 500.0f;
+		m_verticalVelocity = 480.0f;
 
 		// 物理に反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
@@ -401,7 +401,7 @@ public:
 		velocity.setZ(move.z);
 		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
 
-		if (motionRate > 0.4f)
+		if (motionRate > 0.5f)
 		{
 			if (input.attack)
 			{
@@ -482,7 +482,7 @@ public:
 		pPlayer->SetMove(move);
 
 		// 上方向初速
-		m_verticalVelocity = 520.0f;
+		m_verticalVelocity = 550.0f;
 
 		// 物理に反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
@@ -516,7 +516,7 @@ public:
 		}
 
 		// ===== 重力処理 =====
-		m_verticalVelocity -= 20.0f; // 重力加速度
+		m_verticalVelocity -= 30.0f; // 重力加速度
 		if (m_verticalVelocity < -300.0f)
 		{
 			m_verticalVelocity = -300.0f; // 最大落下速度を制限
@@ -591,7 +591,7 @@ public:
 		pPlayer->SetMove(move);
 
 		// 上方向初速
-		m_verticalVelocity = 620.0f;
+		m_verticalVelocity = 570.0f;
 
 		// 物理に反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
