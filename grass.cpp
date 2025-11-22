@@ -22,6 +22,7 @@ CGrassBlock::CGrassBlock(int nPriority) : CBlock(nPriority)
 {
 	// 値のクリア
 	m_rotVel = INIT_VEC3;
+	m_distMax = 60.0f;
 }
 //=============================================================================
 // デストラクタ
@@ -39,15 +40,16 @@ void CGrassBlock::Update(void)
 	CBlock::Update();
 
 	D3DXVECTOR3 thisPos = GetPos();
-	float distMax = 60.0f;
 	float fMaxTilt = D3DXToRadian(60);
 
 	// === プレイヤーと敵の中で一番近いものを探す ===
 	float nearestDist = FLT_MAX;
 	D3DXVECTOR3 nearestDiff(0, 0, 0);
 
+	CPlayer* pPlayer = CGame::GetPlayer();
+
 	// --- プレイヤー ---
-	if (CGame::GetPlayer())
+	if (pPlayer)
 	{
 		D3DXVECTOR3 diff = CGame::GetPlayer()->GetPos() - thisPos;
 		float dist = D3DXVec3Length(&diff);
@@ -74,19 +76,26 @@ void CGrassBlock::Update(void)
 	D3DXVECTOR3 rot = GetRot();
 	D3DXVECTOR3 targetRot(0, 0, 0);
 
-	if (nearestDist < distMax) 
+	if (nearestDist < m_distMax)
 	{
 		// 正規化
 		D3DXVec3Normalize(&nearestDiff, &nearestDiff);
 		
 		// 距離に応じた割合
-		float t = 1.0f - (nearestDist / distMax);
+		float t = 1.0f - (nearestDist / m_distMax);
 
 		// 傾き角度 = 最大角度 × 割合
 		float tilt = fMaxTilt * t;
 
 		rot.x = -nearestDiff.z * tilt;
 		rot.z = nearestDiff.x * tilt;
+	}
+
+	if (pPlayer)
+	{
+		D3DXVECTOR3 diff = pPlayer->GetPos() - thisPos;
+		float dist = D3DXVec3Length(&diff);
+		pPlayer->SetInGrass(dist < m_distMax);
 	}
 
 	// *** バネ ＋ ダンピング ***

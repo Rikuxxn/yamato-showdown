@@ -22,13 +22,16 @@ public:
 	CGrassBlock(int nPriority = 5);
 	~CGrassBlock();
 
+	static TYPE GetStaticType(void) { return TYPE_GRASS; }
+
 	void Update(void);
 	void Draw(void);
 
 	int GetCollisionFlags(void) const override { return btCollisionObject::CF_NO_CONTACT_RESPONSE; }
-
+	float GetMaxTiltDistance(void) const { return m_distMax; }
 private:
-	D3DXVECTOR3 m_rotVel; // Šp‘¬“x
+	D3DXVECTOR3 m_rotVel;	// Šp‘¬“x
+	float m_distMax;
 };
 
 #endif

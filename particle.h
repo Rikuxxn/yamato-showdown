@@ -160,22 +160,6 @@ private:
 };
 
 //*****************************************************************************
-// オーラ(仮面用)パーティクルクラス
-//*****************************************************************************
-class CAura2Particle : public CParticle
-{
-public:
-	CAura2Particle();
-	~CAura2Particle();
-
-	HRESULT Init(void);
-	void Update(void);
-
-private:
-
-};
-
-//*****************************************************************************
 // 移動時パーティクルクラス
 //*****************************************************************************
 class CMoveParticle : public CParticle
@@ -208,22 +192,6 @@ private:
 };
 
 //*****************************************************************************
-// 水流(排水)パーティクルクラス
-//*****************************************************************************
-class CWaterFlowParticle : public CParticle
-{
-public:
-	CWaterFlowParticle();
-	~CWaterFlowParticle();
-
-	HRESULT Init(void);
-	void Update(void);
-
-private:
-
-};
-
-//*****************************************************************************
 // 塵パーティクルクラス
 //*****************************************************************************
 class CDustParticle : public CParticle
@@ -231,6 +199,21 @@ class CDustParticle : public CParticle
 public:
 	CDustParticle();
 	~CDustParticle();
+
+	HRESULT Init(void);
+	void Update(void);
+
+private:
+
+};
+//*****************************************************************************
+// 桜パーティクルクラス
+//*****************************************************************************
+class CBlossomParticle : public CParticle
+{
+public:
+	CBlossomParticle();
+	~CBlossomParticle();
 
 	HRESULT Init(void);
 	void Update(void);

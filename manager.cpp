@@ -108,7 +108,7 @@ HRESULT CManager::Init(HINSTANCE hInstance, HWND hWnd)
 	m_pDynamicsWorld = make_unique <btDiscreteDynamicsWorld>(m_pDispatcher.get(), m_pBroadphase.get(), m_pSolver.get(), m_pCollisionConfiguration.get());
 
 	// 重力を設定
-	m_pDynamicsWorld->setGravity(btVector3(0, -9030.0f, 0));
+	m_pDynamicsWorld->setGravity(btVector3(0, -9.8f, 0));
 
 	// カメラの生成
 	m_pCamera = new CCamera;
@@ -129,14 +129,14 @@ HRESULT CManager::Init(HINSTANCE hInstance, HWND hWnd)
 	m_pScene = CScene::Create(CScene::MODE_TITLE);
 
 	// タイトル画面だったら
-	if (m_pScene->GetMode() == MODE_TITLE)
+	if (m_pScene->GetMode() == MODE_TITLE || m_pScene->GetMode() == MODE_RESULT)
 	{// カメラの位置の設定
-		D3DXVECTOR3 posV(D3DXVECTOR3(-1373.5f, 331.5f, -1130.5f));
-		D3DXVECTOR3 posR(D3DXVECTOR3(-913.5f, 150.0f, -1700.0f));
+		D3DXVECTOR3 posV(D3DXVECTOR3(437.4f, 116.0f, 90.3f));
+		D3DXVECTOR3 posR(D3DXVECTOR3(124.0f, 265.5f, -630.5f));
 
 		m_pCamera->SetPosV(posV);
 		m_pCamera->SetPosR(posR);
-		m_pCamera->SetRot(D3DXVECTOR3(0.25f, -0.70f, 0.0f));
+		m_pCamera->SetRot(D3DXVECTOR3(-0.19f, 0.41f, 0.0f));
 		m_pCamera->SetDis(sqrtf(
 			((posV.x - posR.x) * (posV.x - posR.x)) +
 			((posV.y - posR.y) * (posV.y - posR.y)) +
@@ -280,7 +280,7 @@ void CManager::Update(void)
 		return;
 	}
 
-	m_pDynamicsWorld->stepSimulation((btScalar)m_fps);
+	m_pDynamicsWorld->stepSimulation((btScalar)m_fps, 1 ,0.16f);
 
 	// カメラの更新
 	m_pCamera->Update();
@@ -337,5 +337,25 @@ void CManager::OnDeviceReset(void)
 	if (m_pScene)
 	{
 		m_pScene->OnDeviceReset();
+	}
+}
+//=============================================================================
+// サムネイルリリース通知
+//=============================================================================
+void CManager::ReleaseThumbnail(void)
+{
+	if (m_pScene)
+	{
+		m_pScene->ReleaseThumbnail();
+	}
+}
+//=============================================================================
+// サムネイルリセット通知
+//=============================================================================
+void CManager::ResetThumbnail(void)
+{
+	if (m_pScene)
+	{
+		m_pScene->ResetThumbnail();
 	}
 }

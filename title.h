@@ -13,6 +13,7 @@
 #include "scene.h"
 #include "blockmanager.h"
 #include "light.h"
+#include "itemselect.h"
 
 //*****************************************************************************
 // タイトルクラス
@@ -24,17 +25,8 @@ public:
 	typedef enum
 	{
 		TYPE_FIRST = 0,	// タイトル
-		TYPE_SECOND,	// PRESS
 		TYPE_MAX
 	}TYPE;
-
-	// タイトルの状態
-	typedef enum
-	{
-		WAIT_PRESS = 0,
-		TO_GAME,
-		STATE_MAX
-	}State;
 
 	CTitle();
 	~CTitle();
@@ -45,8 +37,9 @@ public:
 	void Draw(void);
 	static void ResetLight(void);
 	void OnDeviceReset(void) override;
-	void PressAny(void);
-	void FadeOut(void);
+	void ReleaseThumbnail(void) override;
+	void ResetThumbnail(void) override;
+
 	static CBlockManager* GetBlockManager(void) { return m_pBlockManager; }
 
 private:
@@ -71,13 +64,13 @@ private:
 
 	LPDIRECT3DVERTEXBUFFER9 m_pVtxBuff;		// 頂点バッファへのポインタ
 	int m_nIdxTextureTitle;					// テクスチャインデックス
-	int m_nIdxTexturePress;					// テクスチャインデックス
 	float m_alphaPress;						// 現在のアルファ値
 	bool  m_isAlphaDown;					// 点滅用フラグ（上げる/下げる）
 	bool  m_isEnterPressed;					// エンターキー押された
 	static CBlockManager* m_pBlockManager;	// ブロックマネージャーへのポインタ
-	State m_state;							// 状態
-	CLight* m_pLight;
+	CLight* m_pLight;						// ライトへのポインタ
+	int m_timer;							// パーティクル生成タイマー
+	std::unique_ptr<CItemSelect> m_pItemSelect;// 項目選択へのポインタ
 
 };
 

@@ -16,6 +16,7 @@
 #include "imguimaneger.h"
 #include "guiInfo.h"
 #include "title.h"
+#include "ui.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
@@ -278,24 +279,22 @@ void CRenderer::ResetDevice(void)
 	// 3Dデバッグ表示の破棄
 	m_pDebug3D->Uninit();
 
+	//// 全UIにデバイス再設定通知
+	//CUIManager* pUIManager = CUIManager::GetInstance();
+
+	//for (auto ui : pUIManager->GetAllUI())
+	//{
+	//	ui->Uninit(); // CUIText の場合は D3DXFONT を再生成
+	//}
+
 	m_d3dpp.BackBufferWidth = m_ResizeWidth;
 	m_d3dpp.BackBufferHeight = m_ResizeHeight;
 	m_ResizeWidth = m_ResizeHeight = 0;
 
 	ImGui_ImplDX9_InvalidateDeviceObjects();
 
-	CBlockManager* pBlockMgr = CGame::GetBlockManager();
-	CBlockManager* pBlockMgrTitle = CTitle::GetBlockManager();
-
-	if (pBlockMgr)
-	{
-		pBlockMgr->ReleaseThumbnailRenderTarget();
-	}
-
-	if (pBlockMgrTitle)
-	{
-		pBlockMgrTitle->ReleaseThumbnailRenderTarget();
-	}
+	// サムネイルのリリース通知
+	CManager::ReleaseThumbnail();
 
 	HRESULT hr = m_pD3DDevice->Reset(&m_d3dpp);
 
@@ -306,16 +305,8 @@ void CRenderer::ResetDevice(void)
 
 	ImGui_ImplDX9_CreateDeviceObjects();
 
-	if (pBlockMgr)
-	{
-		pBlockMgr->InitThumbnailRenderTarget(m_pD3DDevice);
-		pBlockMgr->GenerateThumbnailsForResources(); // 必要ならキャッシュも再作成
-	}
-	if (pBlockMgrTitle)
-	{
-		pBlockMgrTitle->InitThumbnailRenderTarget(m_pD3DDevice);
-		pBlockMgrTitle->GenerateThumbnailsForResources(); // 必要ならキャッシュも再作成
-	}
+	// サムネイルのリセット通知
+	CManager::ResetThumbnail();
 
 	// レンダーステートの設定
 	m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
@@ -339,6 +330,11 @@ void CRenderer::ResetDevice(void)
 
 	// 3Dデバッグ表示の初期化
 	m_pDebug3D->Init();
+
+	//for (auto ui : pUIManager->GetAllUI())
+	//{
+	//	ui->Init(); // CUIText の場合は D3DXFONT を再生成
+	//}
 
 	// デバイスリセット通知(シーンライト)
 	CManager::OnDeviceReset();

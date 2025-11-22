@@ -95,6 +95,7 @@ public:
     void SetHp(float fHp) { m_fHp = fHp; m_fMaxHp = m_fHp; }
     void SetPos(D3DXVECTOR3 pos) { m_pos = pos; }
     void SetRot(D3DXVECTOR3 rot) { m_rot = rot; }
+    void SetSize(D3DXVECTOR3 size) { m_size = size; }
     void SetRotDest(const D3DXVECTOR3& rotDest) { m_rotDest = rotDest; }
     void SetMove(D3DXVECTOR3 move) { m_move = move; }
 

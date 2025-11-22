@@ -29,6 +29,10 @@
   },
   {
     "type": 7,
+    "filepath": "data/MODELS/blossom_tree.x"
+  },
+  {
+    "type": 8,
     "filepath": "data/MODELS/woodbox.x"
   }
 ]

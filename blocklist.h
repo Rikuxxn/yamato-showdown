@@ -49,8 +49,10 @@ public:
 
 	void Update(void);
 	void UpdateLight(void) override;
+	float GetDistMax(void) { return m_distMax; }
 
 private:
+	static constexpr float m_distMax = 110.0f;
 
 };
 
@@ -66,9 +68,11 @@ public:
 	static TYPE GetStaticType(void) { return TYPE_WATER; }
 
 	void Update(void);
+	bool IsHit(void) { return m_isHit; }
 
 private:
 	int m_counter;	// 生成カウンター
+	bool m_isHit;	// 当たっているkあ
 };
 
 #endif

@@ -34,11 +34,12 @@ CPlayer::CPlayer()
 	m_bIsMoving			= false;						// 移動入力フラグ
 	m_bOnGround			= false;						// 接地フラグ
 	m_pDebug3D			= nullptr;						// 3Dデバッグ表示へのポインタ
-	m_particleTimer		= 0;							// パーティクルタイマー
 	m_pSwordModel		= nullptr;						// 武器モデルのポインタ
 	m_pWeaponCollider	= nullptr;						// 武器の当たり判定へのポインタ
 	m_pTipModel			= nullptr;						// 武器コライダー用モデル
 	m_pBaseModel		= nullptr;						// 武器コライダー用モデル
+	m_isInGrass			= false;
+	m_isInTorch			= false;
 }
 //=============================================================================
 // デストラクタ
@@ -56,6 +57,7 @@ CPlayer* CPlayer::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot)
 
 	pPlayer->SetPos(pos);
 	pPlayer->SetRot(D3DXToRadian(rot));
+	pPlayer->SetSize(D3DXVECTOR3(1.1f, 1.1f, 1.1f));
 
 	// 初期化処理
 	pPlayer->Init();
@@ -214,42 +216,6 @@ void CPlayer::Update(void)
 
 	// コライダーの位置更新(オフセットを設定)
 	UpdateCollider(D3DXVECTOR3(0, 35.0f, 0));// 足元に合わせる
-
-	CModelEffect* pModelEffect = nullptr;
-
-	//if (m_bIsMoving && m_bOnGround)
-	//{
-	//	m_particleTimer++;
-
-	//	if (m_particleTimer >= DASH_PARTICLE_INTERVAL)
-	//	{
-	//		m_particleTimer = 0;
-
-	//		// ランダムな角度で横に広がる
-	//		float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
-	//		float speed = (rand() % 150) / 300.0f + 0.2f;
-
-	//		// 移動量
-	//		D3DXVECTOR3 move;
-	//		move.x = cosf(angle) * speed;
-	//		move.z = sinf(angle) * speed;
-	//		move.y = (rand() % 80) / 50.0f + 0.05f; // 少しだけ上方向
-
-	//		// 向き
-	//		D3DXVECTOR3 rot;
-	//		rot.x = ((rand() % 360) / 180.0f) * D3DX_PI;
-	//		rot.y = ((rand() % 360) / 180.0f) * D3DX_PI;
-	//		rot.z = ((rand() % 360) / 180.0f) * D3DX_PI;
-
-	//		// モデルエフェクトの生成
-	//		pModelEffect = CModelEffect::Create("data/MODELS/effectModel_step.x", GetPos(), rot,
-	//			move, D3DXVECTOR3(0.3f, 0.3f, 0.3f), 180, 0.01f, 0.008f);
-	//	}
-	//}
-	//else
-	//{
-	//	m_particleTimer = 0; // 停止時はリセット
-	//}
 
 	if (m_pShadowS != nullptr)
 	{
@@ -443,7 +409,14 @@ InputData CPlayer::GatherInput(void)
 	CCamera* pCamera = CManager::GetCamera();					// カメラの取得
 	D3DXVECTOR3 CamRot = pCamera->GetRot();						// カメラ角度の取得
 
-	if (CGame::GetEnemy()->IsDead())
+	if (this == nullptr)
+	{
+		return input;
+	}
+
+	CEnemy* pEnemy = CGame::GetEnemy();
+
+	if (pEnemy && pEnemy->IsDead())
 	{
 		return input;
 	}

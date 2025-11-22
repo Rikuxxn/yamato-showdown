@@ -539,3 +539,92 @@ void CDustParticle::Update(void)
 	// パーティクルの更新処理
 	CParticle::Update();
 }
+
+
+//=============================================================================
+// 桜パーティクルのコンストラクタ
+//=============================================================================
+CBlossomParticle::CBlossomParticle()
+{
+	// 値のクリア
+}
+//=============================================================================
+// 桜パーティクルのデストラクタ
+//=============================================================================
+CBlossomParticle::~CBlossomParticle()
+{
+	// なし
+}
+//=============================================================================
+// 桜パーティクルのコンストラクタ
+//=============================================================================
+HRESULT CBlossomParticle::Init(void)
+{
+	// テクスチャを設定しておく
+	SetPath("data/TEXTURE/blossom.png");
+
+	// パーティクルの初期化処理
+	CParticle::Init();
+
+	return S_OK;
+}
+//=============================================================================
+// 桜パーティクルのコンストラクタ
+//=============================================================================
+void CBlossomParticle::Update(void)
+{
+	int nMaxParticle = GetMaxParticle();
+
+	// パーティクル生成
+	for (int nCnt = 0; nCnt < nMaxParticle; nCnt++)//発生させたい粒子の数
+	{
+		EffectDesc desc;
+
+		// テクスチャの指定
+		desc.path = "data/TEXTURE/blossom.png";
+
+		// 半径を決めてランダム位置にスポーン
+		float radiusMax = 550.0f;
+
+		// 0.0～1.0 の乱数
+		float r = (rand() % 10000) / 10000.0f;
+
+		// 平方根を取って均一に分布させる
+		float radius = sqrtf(r) * radiusMax;
+
+		float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
+		float height = (rand() % 400) - 30.0f; // -30～370くらい
+
+		// 位置
+		D3DXVECTOR3 offPos = GetPos();
+		desc.pos.x = offPos.x + cosf(angle) * radius;
+		desc.pos.z = offPos.z + sinf(angle) * radius;
+		desc.pos.y = offPos.y + height;
+
+		// 移動量
+		desc.move.x = (rand() % 100 - 50) / 10.0f;
+		desc.move.z = (rand() % 100 - 50) / 10.0f;
+		desc.move.y = (rand() % 50) / 200.0f - 0.01f;
+
+		// 色の設定
+		desc.col = GetCol();
+
+		// 半径の設定
+		desc.fRadius = 6.0f + (rand() % 6);
+
+		// 寿命の設定
+		desc.nLife = 200 + (rand() % 200);
+
+		// 重力の設定
+		desc.fGravity = 0.006f;
+
+		// 半径の減衰量の設定
+		desc.fDecRadius = 0.03f;
+
+		// エフェクトの設定
+		CEffect::Create(desc);
+	}
+
+	// パーティクルの更新処理
+	CParticle::Update();
+}

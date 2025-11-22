@@ -11,6 +11,7 @@
 #include "enemy.h"
 #include "guage.h"
 #include "enemyState.h"
+#include "ui.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -115,7 +116,7 @@ HRESULT CEnemy::Init(void)
 	SetHp(100.0f);
 
 	// ゲージを生成
-	SetGuages(D3DXVECTOR3(600.0f, 100.0f, 0.0f), 620.0f, 10.0f);
+	SetGuages(D3DXVECTOR3(570.0f, 100.0f, 0.0f), 620.0f, 10.0f);
 
 	return S_OK;
 }

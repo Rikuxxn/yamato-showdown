@@ -49,6 +49,8 @@ public:
 	static void SetMode(CScene::MODE mode);
 	static CScene::MODE GetMode(void);
 	static void OnDeviceReset(void);
+	static void ReleaseThumbnail(void);
+	static void ResetThumbnail(void);
 
 private:
 	static CRenderer* m_pRenderer;				// レンダラーへのポインタ

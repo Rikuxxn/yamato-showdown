@@ -15,6 +15,8 @@
 #include "charactermanager.h"
 #include "player.h"
 #include "enemy.h"
+#include "ui.h"
+#include "meshdome.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
@@ -37,6 +39,7 @@ CGame::CGame() : CScene(CScene::MODE_GAME)
 	// 値のクリア
 	m_pRankingManager = nullptr;
 	m_pLight = nullptr;
+	m_timer = 0;// パーティクル生成タイマー
 }
 //=============================================================================
 // デストラクタ
@@ -89,6 +92,19 @@ HRESULT CGame::Init(void)
 	// タイムの生成
 	m_pTime = CTime::Create(3, 0, 760.0f, 10.0f, 42.0f, 58.0f);
 
+	// メッシュドームの生成
+	CMeshDome::Create(D3DXVECTOR3(0.0f, 0.0f, 0.0f), 1000);
+
+	//// UI生成
+	//auto ui = CUIBase::Create(210.0f, 855.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 160.0f, 35.0f);
+	//auto uiTex = CUIBase::Create("data/TEXTURE/ui_pause.png", 210.0f, 555.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 160.0f, 35.0f);
+	//auto enemyName = CUIText::Create("宮本 武蔵", 880.0f, 60.0f, 28, D3DXCOLOR(1.0f, 0.1f, 0.1f, 1.0f));
+
+	//// UI登録
+	//CUIManager::GetInstance()->AddUI("test", ui);
+	//CUIManager::GetInstance()->AddUI("tex", uiTex);
+	//CUIManager::GetInstance()->AddUI("EnemyName", enemyName);
+
 	//// ポーズUIの生成
 	//m_pUi = CUi::Create<CPauseUi>("data/TEXTURE/ui_pause.png",D3DXVECTOR3(210.0f, 855.0f, 0.0f), 160.0f, 35.0f);
 
@@ -100,9 +116,6 @@ HRESULT CGame::Init(void)
 
 	// ランキングマネージャーのインスタンス生成
 	m_pRankingManager = make_unique<CRankingManager>();
-
-	// フラグのリセット
-	CResult::SetGet(false);
 
 	return S_OK;
 }
@@ -145,6 +158,17 @@ void CGame::Uninit(void)
 //=============================================================================
 void CGame::Update(void)
 {
+	m_timer++;
+
+	if (m_timer >= 15)// 一定間隔で生成
+	{// 塵の生成
+		// リセット
+		m_timer = 0;
+
+		// パーティクル生成
+		CParticle::Create<CBlossomParticle>(INIT_VEC3, m_pPlayer->GetPos(), D3DXCOLOR(0.8f, 0.8f, 0.8f, 0.4f), 0, 1);
+	}
+
 	CFade* pFade = CManager::GetFade();
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();
 	CInputJoypad* pJoypad = CManager::GetInputJoypad();
@@ -178,18 +202,6 @@ void CGame::Update(void)
 	// ブロックマネージャーの更新処理
 	m_pBlockManager->Update();
 
-	// 終了判定チェック
-	if (m_pBlockManager)
-	{
-		for (auto block : m_pBlockManager->GetAllBlocks())
-		{
-			if (block->IsGet())
-			{// 埋蔵金を手に入れたか
-				CResult::SetGet(true);
-			}
-		}
-	}
-
 	// 敵を倒したらクリア
 	if (pFade->GetFade() == CFade::FADE_NONE && CGame::GetEnemy()->IsDeath())
 	{
@@ -206,8 +218,8 @@ void CGame::Update(void)
 		m_pPlayer->IsDead())
 	{// 時間切れ または プレイヤー死亡
 
-		// リザルト画面に移行
-		pFade->SetFade(MODE_RESULT);
+		// ゲームオーバー画面に移行
+		pFade->SetFade(MODE_GAMEOVER);
 	}
 
 #ifdef _DEBUG
@@ -241,19 +253,19 @@ void CGame::UpdateLight(void)
 	D3DXCOLOR mainColor;
 
 	// ======== 時間帯ごとに補間 ========
-	if (progress < 0.33f)
+	if (progress < 0.30f)
 	{// 夕方
-		float t = progress / 0.33f;
+		float t = progress / 0.30f;
 		D3DXColorLerp(&mainColor, &evening, &night, t);
 	}
-	else if (progress < 0.66f)
+	else if (progress < 0.90f)
 	{// 夜
-		float t = (progress - 0.33f) / 0.33f;
+		float t = (progress - 0.30f) / (0.90f - 0.30f);
 		D3DXColorLerp(&mainColor, &night, &morning, t);
 	}
 	else
 	{// 明け方
-		float t = (progress - 0.66f) / 0.34f;
+		float t = (progress - 0.90f) / (1.0f - 0.90f);
 		D3DXColorLerp(&mainColor, &morning, &evening, t); // 少し戻すとループっぽく自然
 	}
 
@@ -362,4 +374,19 @@ void CGame::SetEnablePause(bool bPause)
 		// 音を再開
 		CManager::GetSound()->ResumeAll();
 	}
+}
+//=============================================================================
+// サムネイルリリース通知
+//=============================================================================
+void CGame::ReleaseThumbnail(void)
+{
+	m_pBlockManager->ReleaseThumbnailRenderTarget();
+}
+//=============================================================================
+// サムネイルリセット通知
+//=============================================================================
+void CGame::ResetThumbnail(void)
+{
+	m_pBlockManager->InitThumbnailRenderTarget(CManager::GetRenderer()->GetDevice());
+	m_pBlockManager->GenerateThumbnailsForResources(); // キャッシュも再作成
 }

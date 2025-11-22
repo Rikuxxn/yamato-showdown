@@ -41,8 +41,8 @@ public:
 private:
 	static constexpr int MAX_WORD	= 1024;	// 最大文字数
 	static constexpr int MAX_PARTS	= 32;	// 最大パーツ数
-	static constexpr int MAX_KEY	= 128;	// 最大キー数
-	static constexpr int MAX_MOTION = 10;	// モーションの最大数
+	static constexpr int MAX_KEY	= 256;	// 最大キー数
+	static constexpr int MAX_MOTION = 20;	// モーションの最大数
 
 	//*************************************************************************
 	// キー構造体

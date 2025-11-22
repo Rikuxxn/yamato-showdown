@@ -40,6 +40,8 @@ public:
 	virtual void UpdateLight(void);
 	void Draw(void);
 	void OnDeviceReset(void) override;
+	void ReleaseThumbnail(void) override;
+	void ResetThumbnail(void) override;
 
 	static CPlayer* GetPlayer(void) { return m_pPlayer; }
 	static CEnemy* GetEnemy(void) { return m_pEnemy; }
@@ -65,6 +67,7 @@ private:
 	static int m_nSeed;							// マップのシード値
 	std::unique_ptr<CRankingManager> m_pRankingManager;			// ランキングへのポインタ
 	CLight* m_pLight;
+	int m_timer;								// パーティクル生成タイマー
 };
 
 #endif

@@ -11,12 +11,17 @@
 #include "title.h"
 #include "input.h"
 #include "manager.h"
-
+#include "dummyPlayer.h"
+#include "particle.h"
+#include "meshdome.h"
 
 //*****************************************************************************
 // 静的メンバ変数宣言
 //*****************************************************************************
 CBlockManager* CTitle::m_pBlockManager = nullptr;		// ブロックマネージャーへのポインタ
+
+// 名前空間stdの使用
+using namespace std;
 
 //=============================================================================
 // コンストラクタ
@@ -26,12 +31,11 @@ CTitle::CTitle() : CScene(CScene::MODE_TITLE)
 	// 値のクリア
 	m_pVtxBuff = nullptr;		// 頂点バッファへのポインタ
 	m_nIdxTextureTitle = 0;
-	m_nIdxTexturePress = 0;
 	m_alphaPress = 0.0f;          // 現在のα値（0.0f ～ 1.0f）
 	m_isAlphaDown = false;         // 点滅用フラグ（上げる/下げる）
 	m_isEnterPressed = false;      // エンターキー押された
-	m_state = WAIT_PRESS;
 	m_pLight = nullptr;
+	m_timer = 0;
 
 	for (int nCnt = 0; nCnt < TYPE_MAX; nCnt++)
 	{
@@ -71,15 +75,19 @@ HRESULT CTitle::Init(void)
 	// JSONの読み込み
 	m_pBlockManager->LoadFromJson("data/block_title.json");
 
+	// ダミープレイヤーの生成
+	CDummyPlayer::Create(D3DXVECTOR3(300.0f, 110.0f, -10.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f), CDummyPlayer::NEUTRAL);
+
+	// メッシュドームの生成
+	CMeshDome::Create(D3DXVECTOR3(0.0f, -50.0f, 0.0f), 2200);
+
 	// デバイスの取得
 	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
 
 	// テクスチャの取得
 	m_nIdxTextureTitle = CManager::GetTexture()->RegisterDynamic("data/TEXTURE/title.png");
-	m_nIdxTexturePress = CManager::GetTexture()->RegisterDynamic("data/TEXTURE/press.png");
 
 	m_vertexRanges[TYPE_FIRST] = { 0, 3 }; // タイトル
-	m_vertexRanges[TYPE_SECOND] = { 4, 7 }; // PRESS
 
 	// 頂点バッファの生成
 	pDevice->CreateVertexBuffer(sizeof(VERTEX_2D) * 4 * 2,
@@ -94,13 +102,12 @@ HRESULT CTitle::Init(void)
 	// 頂点バッファをロックし、頂点情報へのポインタを取得
 	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
 
-	ImageInfo images[2] =
+	ImageInfo images[1] =
 	{
 		   { D3DXVECTOR3(420.0f, 270.0f, 0.0f), 320.0f, 220.0f },	// タイトルロゴ
-		   { D3DXVECTOR3(880.0f, 770.0f, 0.0f), 320.0f, 50.0f }		// PRESS
 	};
 
-	for (int nCnt = 0; nCnt < 2; nCnt++)
+	for (int nCnt = 0; nCnt < 1; nCnt++)
 	{
 		// 頂点座標の設定
 		pVtx[0].pos = D3DXVECTOR3(images[nCnt].pos.x - images[nCnt].width, images[nCnt].pos.y - images[nCnt].height, 0.0f);
@@ -131,8 +138,11 @@ HRESULT CTitle::Init(void)
 	// 頂点バッファをアンロックする
 	m_pVtxBuff->Unlock();
 
-	// 炎サウンドの再生
-	CManager::GetSound()->Play(CSound::SOUND_LABEL_FIRE);
+	// 項目選択の生成
+	m_pItemSelect = make_unique<CItemSelect>();
+
+	// 項目選択の初期化処理
+	m_pItemSelect->Init();
 
 	return S_OK;
 }
@@ -141,8 +151,6 @@ HRESULT CTitle::Init(void)
 //=============================================================================
 void CTitle::Uninit(void)
 {
-	CManager::GetSound()->Stop(CSound::SOUND_LABEL_FIRE);
-
 	// ブロックマネージャーの破棄
 	if (m_pBlockManager != nullptr)
 	{
@@ -171,69 +179,19 @@ void CTitle::Uninit(void)
 //=============================================================================
 void CTitle::Update(void)
 {
-	switch (m_state)
-	{
-	case WAIT_PRESS:
-		PressAny();
-		break;
+	m_timer++;
 
-	case TO_GAME:
-		FadeOut();
-		break;
+	if (m_timer >= 15)// 一定間隔で生成
+	{// 塵の生成
+		// リセット
+		m_timer = 0;
+
+		// パーティクル生成
+		CParticle::Create<CBlossomParticle>(INIT_VEC3, CManager::GetCamera()->GetPosR(), D3DXCOLOR(0.8f, 0.8f, 0.8f, 0.4f), 0, 1);
 	}
 
-	// アルファ値を頂点に適用
-	int starts[] = 
-	{
-		m_vertexRanges[TYPE_FIRST].start,
-		m_vertexRanges[TYPE_SECOND].start
-	};
-	int ends[] =
-	{
-		m_vertexRanges[TYPE_FIRST].end,
-		m_vertexRanges[TYPE_SECOND].end
-	};
-
-	VERTEX_2D* pVtx;// 頂点情報へのポインタ
-
-	// 頂点バッファをロックし、頂点情報へのポインタを取得
-	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
-
-	// TYPE_SECONDには常にアルファ適用
-	{
-		int start = m_vertexRanges[TYPE_SECOND].start;
-		int end = m_vertexRanges[TYPE_SECOND].end;
-
-		for (int n = start; n <= end; n++)
-		{
-			pVtx[n].col = D3DXCOLOR(1.0f, 1.0f, 1.0f, m_alphaPress);
-		}
-	}
-
-	// TYPE_FIRSTはm_isEnterPressedがtrueになった時だけ
-	if (m_isEnterPressed)
-	{
-		int start = m_vertexRanges[TYPE_FIRST].start;
-		int end = m_vertexRanges[TYPE_FIRST].end;
-
-		for (int n = start; n <= end; n++)
-		{
-			pVtx[n].col = D3DXCOLOR(1.0f, 1.0f, 1.0f, m_alphaPress);
-		}
-	}
-	else
-	{
-		int start = m_vertexRanges[TYPE_FIRST].start;
-		int end = m_vertexRanges[TYPE_FIRST].end;
-
-		for (int n = start; n <= end; n++)
-		{
-			pVtx[n].col = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
-		}
-	}
-
-	// 頂点バッファをアンロックする
-	m_pVtxBuff->Unlock();
+	// 項目選択の更新処理
+	m_pItemSelect->Update();
 
 	// ブロックマネージャーの更新処理
 	m_pBlockManager->Update();
@@ -253,7 +211,7 @@ void CTitle::Draw(void)
 	pDevice->SetFVF(FVF_VERTEX_2D);
 
 	// テクスチャインデックス配列
-	int textures[2] = { m_nIdxTextureTitle, m_nIdxTexturePress };
+	int textures[1] = { m_nIdxTextureTitle };
 
 	// 各テクスチャごとに描画
 	for (int nCnt = 0; nCnt < TYPE_MAX; nCnt++)
@@ -273,13 +231,37 @@ void CTitle::ResetLight(void)
 	// ライトを削除しておく
 	CLight::Uninit();
 
-	// ライトの初期設定処理
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.9f, 0.9f, 0.9f, 1.0f), D3DXVECTOR3(0.0f, -1.0f, 0.0f), D3DXVECTOR3(0.0f, 300.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.3f, 0.3f, 0.3f, 1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-	CLight::AddLight(D3DLIGHT_DIRECTIONAL, D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f), D3DXVECTOR3(0.0f, 0.0f, -1.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	// 暖色・斜め下方向
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		D3DXCOLOR(1.0f, 0.65f, 0.4f, 1.0f),    // オレンジ系
+		D3DXVECTOR3(-0.3f, -0.8f, 0.2f),       // 西日のように斜め
+		D3DXVECTOR3(0.0f, 300.0f, 0.0f)
+	);
+
+	// 暖色
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		D3DXCOLOR(1.0f, 0.65f, 0.4f, 1.0f),    // オレンジ系
+		D3DXVECTOR3(0.0f, -0.8f, -0.2f),
+		D3DXVECTOR3(0.0f, 300.0f, 0.0f)
+	);
+
+	// 薄い青
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		D3DXCOLOR(0.3f, 0.35f, 0.5f, 1.0f),    // 夕方の空の寒色寄り
+		D3DXVECTOR3(0.0f, 1.0f, 0.0f),
+		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
+	);
+
+	// 環境的な補助光
+	CLight::AddLight(
+		D3DLIGHT_DIRECTIONAL,
+		D3DXCOLOR(0.5f, 0.4f, 0.4f, 1.0f),     // 柔らかめの赤系
+		D3DXVECTOR3(0.3f, -0.2f, -0.3f),
+		D3DXVECTOR3(0.0f, 0.0f, 0.0f)
+	);
 }
 //=============================================================================
 // デバイスリセット通知
@@ -290,64 +272,17 @@ void CTitle::OnDeviceReset(void)
 	ResetLight();
 }
 //=============================================================================
-// 入力処理
+// サムネイルリリース通知
 //=============================================================================
-void CTitle::PressAny(void)
+void CTitle::ReleaseThumbnail(void)
 {
-	CInputKeyboard* pInputKeyboard = CManager::GetInputKeyboard();
-	CInputMouse* pMouse = CManager::GetInputMouse();
-	CInputJoypad* pJoypad = CManager::GetInputJoypad();
-	CFade* pFade = CManager::GetFade();
-
-	if (pFade->GetFade() == CFade::FADE_NONE &&
-		(pInputKeyboard->GetAnyKeyTrigger() || pMouse->GetPress(0) || pJoypad->GetAnyTrigger()))
-	{
-		m_state = TO_GAME;
-		m_isEnterPressed = true;
-
-		// ゲーム画面に移行
-		CManager::GetFade()->SetFade(CScene::MODE_GAME);
-	}
-	else
-	{
-		// 点滅ロジック
-		float speed = 0.01f;
-
-		if (m_isAlphaDown)
-		{
-			m_alphaPress -= speed;
-
-			if (m_alphaPress < 0.1f) // 最小値
-			{
-				m_alphaPress = 0.1f;
-				m_isAlphaDown = false;
-			}
-		}
-		else
-		{
-			m_alphaPress += speed;
-
-			if (m_alphaPress > 1.0f) // 最大値
-			{
-				m_alphaPress = 1.0f;
-				m_isAlphaDown = true;
-			}
-		}
-	}
+	m_pBlockManager->ReleaseThumbnailRenderTarget();
 }
 //=============================================================================
-// フェードアウト処理
+// サムネイルリセット通知
 //=============================================================================
-void CTitle::FadeOut(void)
+void CTitle::ResetThumbnail(void)
 {
-	// フェードアウト
-	float fadeSpeed = 0.03f;
-
-	m_alphaPress -= fadeSpeed;
-
-	if (m_alphaPress < 0.0f)
-	{
-		m_alphaPress = 0.0f;
-		m_state = TO_GAME;
-	}
+	m_pBlockManager->InitThumbnailRenderTarget(CManager::GetRenderer()->GetDevice());
+	m_pBlockManager->GenerateThumbnailsForResources(); // キャッシュも再作成
 }

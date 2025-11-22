@@ -45,7 +45,7 @@ CObject2D::~CObject2D()
 //=============================================================================
 // ¶¬ˆ—
 //=============================================================================
-CObject2D* CObject2D::Create(D3DXVECTOR3 pos, float fWidth, float fHeight)
+CObject2D* CObject2D::Create(D3DXVECTOR3 pos, D3DXCOLOR col, float fWidth, float fHeight)
 {
 	CObject2D* pObject2D;
 
@@ -54,7 +54,7 @@ CObject2D* CObject2D::Create(D3DXVECTOR3 pos, float fWidth, float fHeight)
 
 	pObject2D->SetPos(pos);
 	pObject2D->SetSize(fWidth, fHeight);
-	pObject2D->SetCol(D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+	pObject2D->SetCol(col);
 
 	// ‰Šú‰»ˆ—
 	pObject2D->Init();

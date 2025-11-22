@@ -23,6 +23,7 @@ public:
 		MODE_TITLE = 0,
 		MODE_GAME,
 		MODE_RESULT,
+		MODE_GAMEOVER,
 		MODE_RANKING,
 		MODE_MAX
 	}MODE;
@@ -36,6 +37,8 @@ public:
 	virtual void Update(void) = 0;
 	virtual void Draw(void) = 0;
 	virtual void OnDeviceReset(void) {}
+	virtual void ReleaseThumbnail(void) {}
+	virtual void ResetThumbnail(void) {}
 	D3DXVECTOR3 GetPos(void);
 	MODE GetMode(void) { return m_mode; }
 

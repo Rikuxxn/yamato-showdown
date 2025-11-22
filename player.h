@@ -38,7 +38,7 @@ public:
 	CPlayer();
 	~CPlayer();
 
-	static constexpr float PLAYER_SPEED = 200.0f;				// 移動スピード
+	static constexpr float PLAYER_SPEED = 20.0f;				// 移動スピード
 
 	// プレイヤーモーションの種類
 	typedef enum
@@ -66,7 +66,8 @@ public:
 	//*****************************************************************************
 	// setter関数
 	//*****************************************************************************
-
+	void SetInGrass(bool flag) { m_isInGrass = flag; }
+	void SetInTorch(bool flag) { m_isInTorch = flag; }
 
 	//*****************************************************************************
 	// getter関数
@@ -91,7 +92,6 @@ public:
 
 private:
 	static constexpr int MAX_PARTS			= 32;		// 最大パーツ数
-	static constexpr float MAX_GRAVITY		= -0.26f;	// 重力加速度
 	static constexpr float CAPSULE_RADIUS	= 10.5f;	// カプセルコライダーの半径
 	static constexpr float CAPSULE_HEIGHT	= 45.5f;	// カプセルコライダーの高さ
 
@@ -104,12 +104,12 @@ private:
 	bool m_playerUse;					// 使われているかどうか
 	bool m_bIsMoving;					// 移動入力フラグ
 	bool m_bOnGround;					// 接地フラグ
-	int m_particleTimer;				// パーティクルタイマー
-	static constexpr int DASH_PARTICLE_INTERVAL = 10; // パーティクル発生間隔（フレーム数）
 	CModel* m_pSwordModel; // 武器モデルのポインタ
 	CObjectX* m_pTipModel;	// 武器コライダー用モデル
 	CObjectX* m_pBaseModel;	// 武器コライダー用モデル
 	std::unique_ptr<CWeaponCollider> m_pWeaponCollider;// 武器の当たり判定へのポインタ
+	bool m_isInGrass;
+	bool m_isInTorch;
 
 	// ステートを管理するクラスのインスタンス
 	StateMachine<CPlayer> m_stateMachine;

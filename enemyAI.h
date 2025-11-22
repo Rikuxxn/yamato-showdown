@@ -25,10 +25,23 @@ public:
 	CEnemyAI();
 	~CEnemyAI();
 
+	// プレイヤーの行動記録構造体
+	struct PlayerBehaviorLog
+	{
+		int attackCountEvening = 0;
+		int inGrassCount = 0;// 草むらに潜む
+	};
+
 	void Update(CEnemy* pEnemy, CPlayer* pPlayer);
+	void RecordPlayerAction(void);
+	void SetAccumulateCooldown(int nTime) { m_afterAttackCooldown = nTime * 60; }
 
 private:
-	float m_timer;
+	int m_timer;
+	int m_afterAttackCooldown;
+	int m_cautionCooldown;
+	PlayerBehaviorLog m_log;
+	bool m_prevAttackState;
 };
 
 #endif

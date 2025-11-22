@@ -11,7 +11,9 @@
 // インクルードファイル
 //*****************************************************************************
 #include "scene.h"
-#include "time.h"
+#include "resulttime.h"
+#include "light.h"
+#include "blockmanager.h"
 
 //*****************************************************************************
 // リザルトクラス
@@ -27,17 +29,21 @@ public:
 	void Update(void);
 	void Draw(void);
 	static void SetClearTime(int min, int sec) { m_nClearMinutes = min; m_nClearSeconds = sec; }
-	static void SetGet(bool flag) { m_isTreasureGet = flag; }
 
-	static bool GetTreasure(void) { return m_isTreasureGet; }
 	static int GetClearMinutes(void) { return m_nClearMinutes; }
 	static int GetClearSeconds(void) { return m_nClearSeconds; }
 
+	static void ResetLight(void);
+	void OnDeviceReset(void) override;
+	void ReleaseThumbnail(void) override;
+	void ResetThumbnail(void) override;
+
 private:
-	static CTime* m_pTime;					// タイムへのポインタ
+	static CResultTime* m_pTime;			// タイムへのポインタ
 	static int m_nClearMinutes;				// クリアタイム(分)
 	static int m_nClearSeconds;				// クリアタイム(秒)
-	static bool m_isTreasureGet;			// 秘宝を入手したか
+	CLight* m_pLight;						// ライトへのポインタ
+	CBlockManager* m_pBlockManager;	// ブロックマネージャーへのポインタ
 };
 
 #endif

@@ -60,7 +60,7 @@ void CItemSelect::Init(void)
             item = CItem::Create(CItem::ITEM_ID_PLAY, Pos, 120.0f, 50.0f);
             break;
         case 1:
-            item = CItem::Create(CItem::ITEM_ID_CREDITS, Pos, 160.0f, 50.0f);
+            item = CItem::Create(CItem::ITEM_ID_TUTORIAL, Pos, 160.0f, 50.0f);
             break;
         case 2:
             item = CItem::Create(CItem::ITEM_ID_EXIT, Pos, 120.0f, 50.0f);

@@ -52,6 +52,8 @@ public:
     bool IsCollidingWithWater(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& waterPositions);
     void ApplyRandomGrassTransform(CBlock* block);
     void FillFloor(int GRID_X, int GRID_Z, float AREA_SIZE);
+    void GenerateOuterGrassBelt(int GRID_X, int GRID_Z, float AREA_SIZE,
+        float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& waterPositions);
 
     void UpdateLight(void) 
     {
@@ -87,6 +89,9 @@ public:
     int GetSelectedIdx(void) { return m_selectedIdx; }
     int GetPrevSelectedIdx(void) { return m_prevSelectedIdx; }
     static CBlock* GetSelectedBlock(void) { return m_selectedBlock; }
+    bool IsPlayerInGrass(void);
+    bool IsPlayerInTorch(void);
+    bool IsPlayerInWater(void);
 
     // 特定のタイプのブロックを取得
     static const std::vector<CBlock*>& GetBlocksByType(CBlock::TYPE type)

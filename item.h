@@ -10,12 +10,12 @@
 //*****************************************************************************
 // インクルードファイル
 //*****************************************************************************
-#include "object.h"
+#include "object2D.h"
 
 //*****************************************************************************
 // 項目クラス
 //*****************************************************************************
-class CItem : public CObject
+class CItem : public CObject2D
 {
 public:
 	CItem(int nPriority = 7);
@@ -25,7 +25,7 @@ public:
 	typedef enum
 	{
 		ITEM_ID_PLAY = 0,
-		ITEM_ID_CREDITS,
+		ITEM_ID_TUTORIAL,
 		ITEM_ID_EXIT,
 		ITEM_MAX
 	}ITEM;
@@ -38,10 +38,7 @@ public:
 	virtual void Execute(void) {};
 
 	bool IsMouseOver(void);
-	void SetPos(D3DXVECTOR3 pos) { m_pos = pos; }
 	void SetPath(const char* path) { strcpy_s(m_szPath, MAX_PATH, path); }
-	void SetCol(D3DXCOLOR col) { m_col = col; }
-	D3DXVECTOR3 GetPos(void) { return m_pos; }
 
 	// 選択状態設定・取得
 	void SetSelected(bool selected) { m_isSelected = selected; }
@@ -49,10 +46,6 @@ public:
 	ITEM GetItemId(void) const;
 
 private:
-	LPDIRECT3DVERTEXBUFFER9 m_pVtxBuff;		// 頂点バッファへのポインタ
-	D3DXVECTOR3 m_pos;						// 位置
-	D3DCOLOR m_col;							// 色
-	float m_fWidth, m_fHeight;				// サイズ
 	int m_nIdxTexture;						// テクスチャインデックス
 	char m_szPath[MAX_PATH];				// ファイルパス
 	bool m_isSelected;						// 選択したか
@@ -75,13 +68,13 @@ private:
 };
 
 //*****************************************************************************
-// クレジット項目クラス
+// チュートリアル項目クラス
 //*****************************************************************************
-class CCredits : public CItem
+class  CTutorialItem : public CItem
 {
 public:
-	CCredits();
-	~CCredits();
+	CTutorialItem();
+	~CTutorialItem();
 
 	void Execute(void) override;
 

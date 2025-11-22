@@ -94,18 +94,18 @@ void CCamera::Uninit(void)
 //=============================================================================
 void CCamera::Update(void)
 {
-	// タイトル画面だったら
-	if (CManager::GetMode() == MODE_TITLE)
-	{// カメラの位置の設定
-		m_posV = D3DXVECTOR3(-1373.5f, 331.5f, -1130.5f);
-		m_posR = D3DXVECTOR3(-913.5f, 150.0f, -1700.0f);
-		m_vecU = D3DXVECTOR3(0.0f, 1.0f, 0.0f);// 固定でいい
-		m_rot = D3DXVECTOR3(0.25f, -0.70f, 0.0f);
-		m_fDistance = sqrtf(
-			((m_posV.x - m_posR.x) * (m_posV.x - m_posR.x)) +
-			((m_posV.y - m_posR.y) * (m_posV.y - m_posR.y)) +
-			((m_posV.z - m_posR.z) * (m_posV.z - m_posR.z)));
-	}
+	//// タイトル画面だったら
+	//if (CManager::GetMode() == MODE_TITLE || CManager::GetMode() == MODE_RESULT)
+	//{// カメラの位置の設定
+	//	m_posV = D3DXVECTOR3(437.4f, 116.0f, 90.3f);
+	//	m_posR = D3DXVECTOR3(124.0f, 265.5f, -630.5f);
+	//	m_vecU = D3DXVECTOR3(0.0f, 1.0f, 0.0f);// 固定でいい
+	//	m_rot = D3DXVECTOR3(-0.19f, 0.41f, 0.0f);
+	//	m_fDistance = sqrtf(
+	//		((m_posV.x - m_posR.x) * (m_posV.x - m_posR.x)) +
+	//		((m_posV.y - m_posR.y) * (m_posV.y - m_posR.y)) +
+	//		((m_posV.z - m_posR.z) * (m_posV.z - m_posR.z)));
+	//}
 
 	// リスナーの位置の更新
 	CManager::GetSound()->UpdateListener(m_posV);
@@ -130,10 +130,10 @@ void CCamera::Update(void)
 	case MODE_EDIT:
 
 #ifdef _DEBUG
-		if (CManager::GetMode() == MODE_TITLE)
-		{
-			return;
-		}
+		//if (CManager::GetMode() == MODE_TITLE)
+		//{
+		//	return;
+		//}
 
 		// エディターカメラの処理
 		EditCamera();
@@ -143,6 +143,7 @@ void CCamera::Update(void)
 		// ゲームのカメラ処理
 		GameCamera();
 		break;
+
 	case MODE_DIRECTION:
 		// 演出カメラの処理
 		DirectionCamera(m_nTimer);

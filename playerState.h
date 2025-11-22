@@ -96,6 +96,8 @@ public:
 			// 移動モーション
 			pPlayer->GetMotion()->StartBlendMotion(CPlayer::MOVE, 10);
 		}
+
+		m_particleTimer = 0;
 	}
 
 	void OnUpdate(CPlayer* pPlayer)override
@@ -146,6 +148,42 @@ public:
 		velocity.setZ(currentMove.z);
 		pPlayer->GetRigidBody()->setLinearVelocity(velocity);
 
+		CModelEffect* pModelEffect = nullptr;
+
+		if (pPlayer->GetIsMoving() && pPlayer->GetOnGround())
+		{
+			m_particleTimer++;
+
+			if (m_particleTimer >= DASH_PARTICLE_INTERVAL)
+			{
+				m_particleTimer = 0;
+
+				// ランダムな角度で横に広がる
+				float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
+				float speed = (rand() % 150) / 300.0f + 0.2f;
+
+				// 移動量
+				D3DXVECTOR3 move;
+				move.x = cosf(angle) * speed;
+				move.z = sinf(angle) * speed;
+				move.y = (rand() % 80) / 50.0f + 0.05f; // 少しだけ上方向
+
+				// 向き
+				D3DXVECTOR3 rot;
+				rot.x = ((rand() % 360) / 180.0f) * D3DX_PI;
+				rot.y = ((rand() % 360) / 180.0f) * D3DX_PI;
+				rot.z = ((rand() % 360) / 180.0f) * D3DX_PI;
+
+				// モデルエフェクトの生成
+				pModelEffect = CModelEffect::Create("data/MODELS/effectModel_step.x", pPlayer->GetPos(), rot,
+					move, D3DXVECTOR3(0.3f, 0.3f, 0.3f), 180, 0.01f, 0.008f);
+			}
+		}
+		else
+		{
+			m_particleTimer = 0; // 停止時はリセット
+		}
+
 		// 移動していなければ待機ステートに戻す
 		if (!pPlayer->GetIsMoving() && !pPlayer->GetMotion()->IsAttacking(CPlayer::ATTACK_01))
 		{
@@ -160,7 +198,8 @@ public:
 	}
 
 private:
-
+	static constexpr int DASH_PARTICLE_INTERVAL = 10; // パーティクル発生間隔（フレーム数）
+	int m_particleTimer;
 };
 
 //*****************************************************************************
@@ -209,7 +248,7 @@ public:
 			toEnemy = pPlayer->GetForward();
 		}
 
-		float dashPower = 800.0f;// スライドパワー
+		float dashPower = 80.0f;// スライドパワー
 
 		D3DXVECTOR3 move = toEnemy * dashPower;
 
@@ -339,13 +378,13 @@ public:
 			toEnemy = -pPlayer->GetForward();
 		}
 
-		float backPower = 3500.0f; // 初速パワー
+		float backPower = 350.0f; // 初速パワー
 		D3DXVECTOR3 move = -toEnemy * backPower;
 
 		pPlayer->SetMove(move);
 
 		// 上方向初速
-		m_verticalVelocity = 480.0f;
+		m_verticalVelocity = 40.0f;
 
 		// 物理に反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
@@ -373,7 +412,7 @@ public:
 			D3DXVECTOR3 backDir = -pPlayer->GetForward();
 			D3DXVec3Normalize(&backDir, &backDir);
 
-			float backPower = 400.0f; // 滑りながら下がる速度
+			float backPower = 40.0f; // 滑りながら下がる速度
 			move = backDir * backPower;
 		}
 		else
@@ -385,10 +424,10 @@ public:
 		}
 
 		// ===== 重力処理 =====
-		m_verticalVelocity -= 20.0f; // 重力加速度
-		if (m_verticalVelocity < -300.0f)
+		m_verticalVelocity -= 2.0f; // 重力加速度
+		if (m_verticalVelocity < -30.0f)
 		{
-			m_verticalVelocity = -300.0f; // 最大落下速度を制限
+			m_verticalVelocity = -30.0f; // 最大落下速度を制限
 		}
 
 		// 移動量を設定
@@ -476,13 +515,13 @@ public:
 			toEnemy = pPlayer->GetForward();
 		}
 
-		float forwardPower = 2000.0f; // 初速パワー
+		float forwardPower = 200.0f; // 初速パワー
 		D3DXVECTOR3 move = toEnemy * forwardPower;
 
 		pPlayer->SetMove(move);
 
 		// 上方向初速
-		m_verticalVelocity = 550.0f;
+		m_verticalVelocity = 55.0f;
 
 		// 物理に反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
@@ -504,7 +543,7 @@ public:
 			D3DXVECTOR3 forwardDir = pPlayer->GetForward();
 			D3DXVec3Normalize(&forwardDir, &forwardDir);
 
-			float forwardPower = 200.0f; // 滑る速度
+			float forwardPower = 20.0f; // 滑る速度
 			move = forwardDir * forwardPower;
 		}
 		else
@@ -516,10 +555,10 @@ public:
 		}
 
 		// ===== 重力処理 =====
-		m_verticalVelocity -= 30.0f; // 重力加速度
-		if (m_verticalVelocity < -300.0f)
+		m_verticalVelocity -= 3.0f; // 重力加速度
+		if (m_verticalVelocity < -30.0f)
 		{
-			m_verticalVelocity = -300.0f; // 最大落下速度を制限
+			m_verticalVelocity = -30.0f; // 最大落下速度を制限
 		}
 
 		// 移動量を設定
@@ -582,16 +621,16 @@ public:
 		pPlayer->GetMotion()->StartBlendMotion(CPlayer::DAMAGE, 10);
 
 		// 最初の勢い（後方への初速）
-		D3DXVECTOR3 forwardDir = -pPlayer->GetForward();
-		D3DXVec3Normalize(&forwardDir, &forwardDir);
+		D3DXVECTOR3 damageDir = CGame::GetEnemy()->GetForward();
+		D3DXVec3Normalize(&damageDir, &damageDir);
 
-		float forwardPower = 1200.0f; // 初速パワー
-		D3DXVECTOR3 move = forwardDir * forwardPower;
+		float forwardPower = 120.0f; // 初速パワー
+		D3DXVECTOR3 move = damageDir * forwardPower;
 
 		pPlayer->SetMove(move);
 
 		// 上方向初速
-		m_verticalVelocity = 570.0f;
+		m_verticalVelocity = 50.0f;
 
 		// 物理に反映
 		btVector3 velocity = pPlayer->GetRigidBody()->getLinearVelocity();
@@ -613,7 +652,7 @@ public:
 			D3DXVECTOR3 forwardDir = -pPlayer->GetForward();
 			D3DXVec3Normalize(&forwardDir, &forwardDir);
 
-			float forwardPower = 150.0f; // 滑る速度
+			float forwardPower = 15.0f; // 滑る速度
 			move = forwardDir * forwardPower;
 		}
 		else
@@ -625,10 +664,10 @@ public:
 		}
 
 		// ===== 重力処理 =====
-		m_verticalVelocity -= 30.0f; // 重力加速度
-		if (m_verticalVelocity < -300.0f)
+		m_verticalVelocity -= 3.0f; // 重力加速度
+		if (m_verticalVelocity < -30.0f)
 		{
-			m_verticalVelocity = -300.0f; // 最大落下速度を制限
+			m_verticalVelocity = -30.0f; // 最大落下速度を制限
 		}
 
 		// 移動量を設定

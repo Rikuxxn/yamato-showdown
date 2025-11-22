@@ -137,6 +137,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -151,6 +152,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -168,12 +170,14 @@
     <ClCompile Include="collisionUtils.cpp" />
     <ClCompile Include="debugproc.cpp" />
     <ClCompile Include="debugproc3D.cpp" />
+    <ClCompile Include="dummyPlayer.cpp" />
     <ClCompile Include="effect.cpp" />
     <ClCompile Include="enemy.cpp" />
     <ClCompile Include="enemyAI.cpp" />
     <ClCompile Include="fade.cpp" />
     <ClCompile Include="FileDialogUtils.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="gameover.cpp" />
     <ClCompile Include="grass.cpp" />
     <ClCompile Include="grid.cpp" />
     <ClCompile Include="guage.cpp" />
@@ -187,6 +191,8 @@
     <ClCompile Include="imgui_tables.cpp" />
     <ClCompile Include="imgui_widgets.cpp" />
     <ClCompile Include="input.cpp" />
+    <ClCompile Include="item.cpp" />
+    <ClCompile Include="itemselect.cpp" />
     <ClCompile Include="light.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
@@ -195,6 +201,7 @@
     </ClCompile>
     <ClCompile Include="manager.cpp" />
     <ClCompile Include="meshcylinder.cpp" />
+    <ClCompile Include="meshdome.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="motion.cpp" />
     <ClCompile Include="number.cpp" />
@@ -220,12 +227,14 @@
     <ClCompile Include="raycast.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="result.cpp" />
+    <ClCompile Include="resulttime.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="shadowS.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="time.cpp" />
     <ClCompile Include="title.cpp" />
+    <ClCompile Include="ui.cpp" />
     <ClCompile Include="weaponcollider.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -237,6 +246,7 @@
     <ClInclude Include="collisionUtils.h" />
     <ClInclude Include="debugproc.h" />
     <ClInclude Include="debugproc3D.h" />
+    <ClInclude Include="dummyPlayer.h" />
     <ClInclude Include="easing.h" />
     <ClInclude Include="effect.h" />
     <ClInclude Include="enemy.h" />
@@ -245,6 +255,7 @@
     <ClInclude Include="fade.h" />
     <ClInclude Include="FileDialogUtils.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="gameover.h" />
     <ClInclude Include="grass.h" />
     <ClInclude Include="grid.h" />
     <ClInclude Include="guage.h" />
@@ -259,11 +270,14 @@
     <ClInclude Include="imstb_textedit.h" />
     <ClInclude Include="imstb_truetype.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="item.h" />
+    <ClInclude Include="itemselect.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="light.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="manager.h" />
     <ClInclude Include="meshcylinder.h" />
+    <ClInclude Include="meshdome.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="motion.h" />
     <ClInclude Include="number.h" />
@@ -285,6 +299,7 @@
     <ClInclude Include="raycast.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="result.h" />
+    <ClInclude Include="resulttime.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="shadowS.h" />
     <ClInclude Include="sound.h" />
@@ -292,6 +307,7 @@
     <ClInclude Include="texture.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="title.h" />
+    <ClInclude Include="ui.h" />
     <ClInclude Include="weaponcollider.h" />
   </ItemGroup>
   <ItemGroup>

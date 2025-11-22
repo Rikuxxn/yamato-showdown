@@ -17,6 +17,9 @@
 #include "game.h"
 #include "blocklist.h"
 #include "guiInfo.h"
+#include <random>
+#include "grass.h"
+#include "player.h"
 
 // JSONの使用
 using json = nlohmann::json;
@@ -499,10 +502,10 @@ void CBlockManager::UpdateInfo(void)
 
 	ImGui::End();
 
-	if (CManager::GetMode() == MODE_TITLE)
-	{
-		return;
-	}
+	//if (CManager::GetMode() == MODE_TITLE)
+	//{
+	//	return;
+	//}
 
 	// マウス選択処理
 	PickBlockFromMouseClick();
@@ -913,8 +916,8 @@ void CBlockManager::GenerateRandomMap(int seed)
 {
 	srand(seed);
 
-	// 壁配置情報の読み込み
-	LoadFromJson("data/wall_info.json");
+	// 配置情報の読み込み
+	LoadFromJson("data/game_info.json");
 
 	// --- 生成パラメータ ---
 	const int GRID_X = 10;
@@ -935,6 +938,9 @@ void CBlockManager::GenerateRandomMap(int seed)
 
 	// --- 灯籠補充 ---
 	EnsureTorchCount(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions, torchPositions);
+
+	// --- 外周を草で囲む ---
+	GenerateOuterGrassBelt(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions);
 
 	// 床を敷き詰める処理
 	FillFloor(GRID_X, GRID_Z, AREA_SIZE); 
@@ -1002,7 +1008,7 @@ void CBlockManager::GenerateClusters(int GRID_X, int GRID_Z, float AREA_SIZE,
 	std::vector<D3DXVECTOR3>& torchPositions)
 {
 	// クラスター数
-	const int clusterCount = 8;
+	const int clusterCount = 10;
 
 	// 灯籠の数
 	int torchRemaining = 3;
@@ -1011,8 +1017,8 @@ void CBlockManager::GenerateClusters(int GRID_X, int GRID_Z, float AREA_SIZE,
 	{
 		float centerX = offsetX + (rand() % GRID_X) * AREA_SIZE;
 		float centerZ = offsetZ + (rand() % GRID_Z) * AREA_SIZE;
-		float radius = 50.0f + rand() % 100;
-		int count = 12 + rand() % 10;
+		float radius = 50.0f + rand() % 80;
+		int count = 8 + rand() % 3;
 
 		for (int j = 0; j < count; j++)
 		{
@@ -1035,13 +1041,17 @@ void CBlockManager::CreateClusterElement(const D3DXVECTOR3& pos, float AREA_SIZE
 	const std::vector<D3DXVECTOR3>& waterPositions, std::vector<D3DXVECTOR3>& torchPositions,
 	int& torchRemaining)
 {
-	const float halfWidth = (GRID_X * AREA_SIZE) / 4.0f;
+	// --- マップの中心座標を求める ---
+	const float mapCenterX = offsetX + (GRID_X - 1) * AREA_SIZE / 2.0f;
+	const float mapCenterZ = offsetZ + (GRID_Z - 1) * AREA_SIZE / 2.0f;
+	const float halfWidth = (GRID_X * AREA_SIZE) / 2.0f;
 
-	float distX = fabsf(pos.x);
-	float distZ = fabsf(pos.z);
+	// --- 中心からの距離を計算 ---
+	float distX = fabsf(pos.x - mapCenterX);
+	float distZ = fabsf(pos.z - mapCenterZ);
 
 	// 外周 → 草
-	if (distX > halfWidth * 0.6f || distZ > halfWidth * 0.6f)
+	if (distX > halfWidth * 0.9f || distZ > halfWidth * 0.9f)
 	{
 		CreateGrassCluster(pos, AREA_SIZE, GRID_X, GRID_Z, offsetX, offsetZ, waterPositions);
 		return;
@@ -1191,39 +1201,155 @@ void CBlockManager::FillFloor(int GRID_X, int GRID_Z, float AREA_SIZE)
 	}
 }
 //=============================================================================
+// 外周部に草の連続クラスタを生成
+//=============================================================================
+void CBlockManager::GenerateOuterGrassBelt(int GRID_X, int GRID_Z, float AREA_SIZE,
+	float offsetX, float offsetZ,
+	const std::vector<D3DXVECTOR3>& waterPositions)
+{
+	const float startX = offsetX + AREA_SIZE * 0.2f; // 内側に少しずらす
+	const float startZ = offsetZ + AREA_SIZE * 0.2f;
+	const float endX = offsetX + (GRID_X - 1) * AREA_SIZE;
+	const float endZ = offsetZ + (GRID_Z - 1) * AREA_SIZE;
+
+	const int clusterPerCell = 2 + rand() % 3;		// 1マスあたりの群れの数
+	const float step = AREA_SIZE / 2.0f;			// 1マス内で複数生成するためのステップ
+	const float variation = AREA_SIZE * 0.5f;		// ランダムばらつき幅
+
+	auto getVariation = [&]() { return ((rand() / (float)RAND_MAX) - 0.5f) * 2.0f * variation; };
+
+	// 生成する辺をランダムに選ぶ（4辺のうち3つ）
+	std::vector<int> sides = { 0, 1, 2, 3 }; // 0=下, 1=上, 2=左, 3=右
+	std::random_device rd;
+	std::mt19937 g(rd());
+	std::shuffle(sides.begin(), sides.end(), g);
+	sides.resize(3); // 上位3つだけ残す
+
+	if (std::find(sides.begin(), sides.end(), 0) != sides.end())
+	{
+		// --- 下辺 ---
+		for (float x = startX; x <= endX; x += AREA_SIZE / 2.0f)
+		{
+			for (int i = 0; i < clusterPerCell; ++i)
+			{
+				D3DXVECTOR3 pos(x + getVariation(), 0.0f, startZ + getVariation());
+				if (IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+				{// 水と被ったら
+					continue;
+				}
+
+				if (CBlock* b = CreateBlock(CBlock::TYPE_GRASS, pos))
+				{
+					// 草の変形処理
+					ApplyRandomGrassTransform(b);
+				}
+			}
+		}
+	}
+
+	if (std::find(sides.begin(), sides.end(), 1) != sides.end())
+	{
+		// --- 上辺 ---
+		for (float x = startX; x <= endX; x += AREA_SIZE / 2.0f)
+		{
+			for (int i = 0; i < clusterPerCell; ++i)
+			{
+				D3DXVECTOR3 pos(x + getVariation(), 0.0f, endZ + getVariation());
+				if (IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+				{// 水と被ったら
+					continue;
+				}
+
+				if (CBlock* b = CreateBlock(CBlock::TYPE_GRASS, pos))
+				{
+					// 草の変形処理
+					ApplyRandomGrassTransform(b);
+				}
+			}
+		}
+	}
+
+	if (std::find(sides.begin(), sides.end(), 2) != sides.end())
+	{
+		// --- 左辺 ---
+		for (float z = startZ + AREA_SIZE / 2.0f; z < endZ; z += AREA_SIZE / 2.0f)
+		{
+			for (int i = 0; i < clusterPerCell; ++i)
+			{
+				D3DXVECTOR3 pos(startX + getVariation(), 0.0f, z + getVariation());
+				if (IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+				{// 水と被ったら
+					continue;
+				}
+
+				if (CBlock* b = CreateBlock(CBlock::TYPE_GRASS, pos))
+				{
+					// 草の変形処理
+					ApplyRandomGrassTransform(b);
+				}
+			}
+		}
+	}
+
+	if (std::find(sides.begin(), sides.end(), 3) != sides.end())
+	{
+		// --- 右辺 ---
+		for (float z = startZ + AREA_SIZE / 2.0f; z < endZ; z += AREA_SIZE / 2.0f)
+		{
+			for (int i = 0; i < clusterPerCell; ++i)
+			{
+				D3DXVECTOR3 pos(endX + getVariation(), 0.0f, z + getVariation());
+				if (IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+				{// 水と被ったら
+					continue;
+				}
+
+				if (CBlock* b = CreateBlock(CBlock::TYPE_GRASS, pos))
+				{
+					// 草の変形処理
+					ApplyRandomGrassTransform(b);
+				}
+			}
+		}
+	}
+}
+
+//=============================================================================
 // 外周部に茂みの連続クラスタを生成
 //=============================================================================
 void CBlockManager::CreateGrassCluster(const D3DXVECTOR3& centerPos, float AREA_SIZE,
 	int GRID_X, int GRID_Z, float offsetX, float offsetZ,
 	const std::vector<D3DXVECTOR3>& waterPositions)
 {
-	int grassLength = 2 + rand() % 5;    // 草を連続配置する数
-	bool horizontal = (rand() % 2 == 0); // X方向 or Z方向
+	int grassLength = 2 + rand() % 3;    // 草を連続配置する数
 
-	float minX = offsetX;
-	float maxX = offsetX + (GRID_X - 1) * AREA_SIZE;
-	float minZ = offsetZ;
-	float maxZ = offsetZ + (GRID_Z - 1) * AREA_SIZE;
+	// --- マップ中心を取得 ---
+	const float mapCenterX = offsetX + (GRID_X - 1) * AREA_SIZE / 2.0f;
+	const float mapCenterZ = offsetZ + (GRID_Z - 1) * AREA_SIZE / 2.0f;
+	const float mapHalfX = (GRID_X * AREA_SIZE) / 2.0f;
+	const float mapHalfZ = (GRID_Z * AREA_SIZE) / 2.0f;
+
+	// --- 中心からの方向に応じて外向き配置 ---
+	D3DXVECTOR3 dir = { 0, 0, 0 };
+	if (fabsf(centerPos.x - mapCenterX) > fabsf(centerPos.z - mapCenterZ))
+	{
+		dir.x = (centerPos.x > mapCenterX) ? 1.0f : -1.0f;
+	}
+	else
+	{
+		dir.z = (centerPos.z > mapCenterZ) ? 1.0f : -1.0f;
+	}
 
 	for (int k = 0; k < grassLength; k++)
 	{
-		D3DXVECTOR3 grassPos = centerPos;
-		if (horizontal)
-		{
-			grassPos.x += k * AREA_SIZE;
-		}
-		else
-		{
-			grassPos.z += k * AREA_SIZE;
-		}
+		D3DXVECTOR3 grassPos = centerPos + dir * (k * AREA_SIZE);
 
-		// マップ内チェック
-		if (grassPos.x < minX || grassPos.x > maxX ||
-			grassPos.z < minZ || grassPos.z > maxZ)
+		// マップ範囲チェック
+		if (grassPos.x < offsetX - AREA_SIZE || grassPos.x > offsetX + (GRID_X - 1) * AREA_SIZE + AREA_SIZE ||
+			grassPos.z < offsetZ - AREA_SIZE || grassPos.z > offsetZ + (GRID_Z - 1) * AREA_SIZE + AREA_SIZE)
 		{
 			continue;
 		}
-
 		// 水と衝突していないかチェック
 		if (IsCollidingWithWater(grassPos, AREA_SIZE, waterPositions))
 		{
@@ -1356,4 +1482,86 @@ void CBlockManager::LoadFromJson(const char* filename)
 
 		block->LoadFromJson(b);
 	}
+}
+//=============================================================================
+// プレイヤーがどの草ブロックにも入っているか判定
+//=============================================================================
+bool CBlockManager::IsPlayerInGrass(void)
+{
+	CPlayer* pPlayer = CGame::GetPlayer();
+	if (!pPlayer)
+	{
+		return false;
+	}
+
+	D3DXVECTOR3 playerPos = pPlayer->GetPos();
+
+	for (CBlock* b : m_blocksByType[CBlock::TYPE_GRASS])
+	{
+		CGrassBlock* grass = static_cast<CGrassBlock*>(b);
+		D3DXVECTOR3 blockPos = grass->GetPos();
+		float distMax = grass->GetMaxTiltDistance();
+
+		D3DXVECTOR3 diff = playerPos - blockPos;
+		float dist = D3DXVec3Length(&diff);
+
+		if (dist < distMax)
+		{
+			// どれか1つでも範囲内なら true
+			return true;
+		}
+	}
+
+	return false; // どの草ブロックにも入っていない
+}
+//=============================================================================
+// プレイヤーがどの灯籠ブロックにも入っているか判定
+//=============================================================================
+bool CBlockManager::IsPlayerInTorch(void)
+{
+	CPlayer* pPlayer = CGame::GetPlayer();
+
+	if (!pPlayer)
+	{
+		return false;
+	}
+
+	D3DXVECTOR3 playerPos = pPlayer->GetPos();
+
+	for (CBlock* b : m_blocksByType[CBlock::TYPE_TORCH_01])
+	{
+		CTorchBlock* torch = static_cast<CTorchBlock*>(b);
+
+		D3DXVECTOR3 blockPos = torch->GetPos();
+		float distMax = torch->GetDistMax();
+
+		D3DXVECTOR3 diff = playerPos - blockPos;
+		float dist = D3DXVec3Length(&diff);
+
+		if (dist < distMax)
+		{
+			// どれか1つでも範囲内なら true
+			return true;
+		}
+	}
+
+	return false; // どの灯籠ブロックにも入っていない
+}
+//=============================================================================
+// プレイヤーがどの水ブロックにも入っているか判定
+//=============================================================================
+bool CBlockManager::IsPlayerInWater(void)
+{
+	for (CBlock* b : m_blocksByType[CBlock::TYPE_WATER])
+	{
+		CWaterBlock* water = static_cast<CWaterBlock*>(b);
+
+		// 1つでも当たっていたら
+		if (water->IsHit())
+		{
+			return true;
+		}
+	}
+
+	return false; // どの灯籠ブロックにも入っていない
 }

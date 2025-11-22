@@ -231,23 +231,20 @@ void CTime::Countdown(void)
 //=============================================================================
 void CTime::Draw(void)
 {
-	if (CManager::GetMode() == CScene::MODE_RESULT)
+	// テクスチャの取得
+	CTexture* pTexture = CManager::GetTexture();
+
+	// デバイスの取得
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
+
+	for (int nCnt = 0; nCnt < DIGITS; nCnt++)
 	{
-		// テクスチャの取得
-		CTexture* pTexture = CManager::GetTexture();
-
-		// デバイスの取得
-		LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
-
-		for (int nCnt = 0; nCnt < DIGITS; nCnt++)
+		if (m_apNumber[nCnt])
 		{
-			if (m_apNumber[nCnt])
-			{
-				// テクスチャの設定
-				pDevice->SetTexture(0, pTexture->GetAddress(m_nIdxTexture));
+			// テクスチャの設定
+			pDevice->SetTexture(0, pTexture->GetAddress(m_nIdxTexture));
 
-				m_apNumber[nCnt]->Draw();
-			}
+			m_apNumber[nCnt]->Draw();
 		}
 	}
 }
@@ -391,26 +388,23 @@ void CColon::Update(void)
 //=============================================================================
 void CColon::Draw(void)
 {
-	if (CManager::GetMode() == CScene::MODE_RESULT)
-	{
-		// テクスチャの取得
-		CTexture* pTexture = CManager::GetTexture();
+	// テクスチャの取得
+	CTexture* pTexture = CManager::GetTexture();
 
-		// デバイスの取得
-		LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
+	// デバイスの取得
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetRenderer()->GetDevice();
 
-		// 頂点バッファをデータストリームに設定
-		pDevice->SetStreamSource(0, m_pVtxBuff, 0, sizeof(VERTEX_2D));
+	// 頂点バッファをデータストリームに設定
+	pDevice->SetStreamSource(0, m_pVtxBuff, 0, sizeof(VERTEX_2D));
 
-		// 頂点フォーマットの設定
-		pDevice->SetFVF(FVF_VERTEX_2D);
+	// 頂点フォーマットの設定
+	pDevice->SetFVF(FVF_VERTEX_2D);
 
-		// テクスチャの設定
-		pDevice->SetTexture(0, pTexture->GetAddress(m_nIdxTexture));
+	// テクスチャの設定
+	pDevice->SetTexture(0, pTexture->GetAddress(m_nIdxTexture));
 
-		// ポリゴンの描画
-		pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-	}
+	// ポリゴンの描画
+	pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 }
 //=============================================================================
 // コロンの位置取得処理

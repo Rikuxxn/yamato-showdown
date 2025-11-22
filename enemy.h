@@ -33,7 +33,7 @@ public:
 	CEnemy();
 	~CEnemy();
 
-	static constexpr float SPEED = 50.0f;				// 移動スピード
+	static constexpr float SPEED = 5.0f;				// 移動スピード
 
 	// 敵モーションの種類
 	typedef enum
@@ -42,10 +42,13 @@ public:
 		MOVE,				// 移動
 		ACCUMULATION,		// 溜め
 		ATTACK_01,			// 攻撃1(溜めの後)
-		//ATTACK_02,			// 攻撃2(近距離)
-		DAMAGE,
-		DEATH,
-		SLIDEMOVE,
+		CLOSE_ATTACK_01,	// 近距離攻撃1
+		CLOSE_ATTACK_02,	// 近距離攻撃2
+		DAMAGE,				// ダメージ
+		DEATH,				// 死亡
+		SLIDEMOVE,			// スライド移動
+		CAUTION,			// 警戒
+		EVADE,				// 回避
 		MAX
 	}ENEMY_MOTION;
 
@@ -57,8 +60,11 @@ public:
 		AI_MOVE,
 		AI_ACCUMULATE,
 		AI_ATTACK_01,
-		AI_ATTACK_02,
+		AI_CLOSE_ATTACK_01,
+		AI_CLOSE_ATTACK_02,
 		AI_SLIDEMOVE,
+		AI_CAUTION,
+		AI_EVADE,
 		AI_MAX
 	}EEnemyAction;
 

@@ -68,7 +68,7 @@ CHARACTERSET
 	PARTSSET
 		INDEX = 4					# âEòr
 		PARENT = 3					# (êe)âEè„òr
-		POS = -17.0 0.5 0.0
+		POS = -13.5 0.5 0.0
 		ROT = 0.0 0.0 0.0
 	END_PARTSSET
 
@@ -89,7 +89,7 @@ CHARACTERSET
 	PARTSSET
 		INDEX = 7					# ç∂òr
 		PARENT = 6					# (êe)ç∂è„òr
-		POS = 17.0 0.5 0.0
+		POS = 13.5 0.5 0.0
 		ROT = 0.0 0.0 0.0
 	END_PARTSSET
 

@@ -100,6 +100,26 @@ void CTorchBlock::Update(void)
 {
 	// ブロックの更新処理
 	CBlock::Update();
+
+	CPlayer* pPlayer = CGame::GetPlayer();
+
+	if (!pPlayer)
+	{
+		return;
+	}
+
+	// 対象との距離を求めるためにプレイヤーの位置を取得
+	D3DXVECTOR3 playerPos = pPlayer->GetPos();
+
+	// 対象との距離を求める
+	D3DXVECTOR3 disPos = playerPos - GetPos();
+	float distance = D3DXVec3Length(&disPos);
+
+	// 範囲内に入ったら
+	if (distance < m_distMax)
+	{
+		pPlayer->SetInTorch(true);
+	}
 }
 //=============================================================================
 // 灯籠ブロックのライト更新処理
@@ -113,19 +133,19 @@ void CTorchBlock::UpdateLight(void)
 	float torchIntensity = 0.0f;
 
 	// 夜になる手前（夕方）でフェードイン
-	if (progress >= 0.25f && progress < 0.33f)
+	if (progress >= 0.25f && progress < 0.30f)
 	{
-		torchIntensity = (progress - 0.25f) / (0.33f - 0.25f); // 0→1
+		torchIntensity = (progress - 0.25f) / (0.30f - 0.25f); // 0→1
 	}
 	// 夜中は最大
-	else if (progress >= 0.33f && progress < 0.6f)
+	else if (progress >= 0.30f && progress < 0.90f)
 	{
 		torchIntensity = 1.0f;
 	}
 	// 明け方でフェードアウト
-	else if (progress >= 0.6f && progress < 0.7f)
+	else if (progress >= 0.90f && progress < 1.0f)
 	{
-		torchIntensity = 1.0f - (progress - 0.6f) / (0.7f - 0.6f); // 1→0
+		torchIntensity = 1.0f - (progress - 0.90f) / (1.0f - 0.90f); // 1→0
 	}
 	// それ以外は消灯
 	else
@@ -156,6 +176,7 @@ CWaterBlock::CWaterBlock(int nPriority) : CBlock(nPriority)
 {
 	// 値のクリア
 	m_counter = 0;// 生成カウンター
+	m_isHit = false;// 当たっているか
 }
 //=============================================================================
 // 水ブロックのデストラクタ
@@ -183,6 +204,15 @@ void CWaterBlock::Update(void)
 	// カプセルとAABBの当たり判定
 	bool isOverlap = CCollision::CheckCapsuleAABBCollision(GetPos(), GetModelSize(), GetSize(),
 		pPos, pPlayer->GetRadius(), pPlayer->GetHeight());
+
+	if (isOverlap)
+	{
+		m_isHit = true;
+	}
+	else
+	{
+		m_isHit = false;
+	}
 
 	if (pPlayer && isOverlap && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f))
 	{
