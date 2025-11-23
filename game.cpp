@@ -208,7 +208,11 @@ void CGame::Update(void)
 		// ランキングに登録
 		m_pRankingManager->AddRecordWithLimit(3, 0, m_pTime->GetMinutes(), m_pTime->GetnSeconds());
 
+		// 順位のインデックスを取得
+		int rankIndex = m_pRankingManager->GetRankIdx();
+
 		// リザルトにセット
+		CResult::SetClearRank(rankIndex);// アニメーション用に順位のインデックスを渡す
 		CResult::SetClearTime(m_pTime->GetMinutes(), m_pTime->GetnSeconds());
 
 		// リザルト画面に移行
@@ -230,7 +234,11 @@ void CGame::Update(void)
 		// ランキングに登録
 		m_pRankingManager->AddRecordWithLimit(3, 0, m_pTime->GetMinutes(), m_pTime->GetnSeconds());
 
+		// 順位のインデックスを取得
+		int rankIndex = m_pRankingManager->GetRankIdx();
+
 		// リザルトにセット
+		CResult::SetClearRank(rankIndex);// アニメーション用に順位のインデックスを渡す
 		CResult::SetClearTime(m_pTime->GetMinutes(), m_pTime->GetnSeconds());
 
 		// リザルト画面に移行

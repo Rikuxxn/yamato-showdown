@@ -41,22 +41,22 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
     }
 
     // 行動を記録
-    RecordPlayerAction();
+    RecordPlayerAction(pEnemy, pPlayer);
 
     bool isEnemyAttacking = pEnemy->GetMotion()->IsCurrentMotion(CEnemy::CLOSE_ATTACK_01);
     bool playerIsAttacking = pPlayer->GetMotion()->IsCurrentMotion(CPlayer::ATTACK_01);
 
-    // 敵が攻撃中にプレイヤーが攻撃してきた場合
-    if (isEnemyAttacking && playerIsAttacking)
-    {
-        // 攻撃継続はせず回避行動へ
-        pEnemy->SetRequestedAction(CEnemy::AI_EVADE);
+    //// 敵が攻撃中にプレイヤーが攻撃してきた場合
+    //if (isEnemyAttacking && playerIsAttacking)
+    //{
+    //    // 攻撃継続はせず回避行動へ
+    //    pEnemy->SetRequestedAction(CEnemy::AI_EVADE);
 
-        // 攻撃連続を防ぐためクールタイム少し増加
-        m_afterAttackCooldown = 20;
+    //    // 攻撃連続を防ぐためクールタイム少し増加
+    //    m_afterAttackCooldown = 20;
 
-        return;
-    }
+    //    return;
+    //}
 
     // プレイヤーとの距離を算出
     D3DXVECTOR3 diff = pPlayer->GetPos() - pEnemy->GetPos();
@@ -108,17 +108,24 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
     {
         // プレイヤーが攻撃してきた回数による回避確率
         float evadeRate = std::min(0.5f, m_log.attackCountEvening * 0.05f);
-        
+        float guardRate = 0.8f; // ガード
+
         int r = rand() % 100;
-        if (r < (int)(evadeRate * 100))
+
+        if (r < evadeRate)
         {
-            // 回避状態
             pEnemy->SetRequestedAction(CEnemy::AI_EVADE);
+        }
+        else if (playerIsAttacking && r < evadeRate + guardRate)
+        {
+            pEnemy->SetRequestedAction(CEnemy::AI_GUARD);
         }
         else
         {
-            // 近距離攻撃
-            pEnemy->SetRequestedAction(CEnemy::AI_CLOSE_ATTACK_01);
+            if (m_afterAttackCooldown <= 0)
+            {
+                pEnemy->SetRequestedAction(CEnemy::AI_CLOSE_ATTACK_01);
+            }
         }
     }
     else if (distance < 250.0f)
@@ -152,19 +159,27 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
 //=============================================================================
 // プレイヤーの行動記録処理
 //=============================================================================
-void CEnemyAI::RecordPlayerAction(void)
+void CEnemyAI::RecordPlayerAction(CEnemy* pEnemy, CPlayer* pPlayer)
 {
+    // 時間の割合
     float progress = CGame::GetTime()->GetProgress(); // 0.0～0.1
-    CPlayer* pPlayer = CGame::GetPlayer();
 
     bool isInGrass = CGame::GetBlockManager()->IsPlayerInGrass();
-
     bool isAttacking = pPlayer->GetMotion()->IsCurrentMotion(CPlayer::ATTACK_01);
 
-    // 攻撃開始した瞬間だけカウント
-    if (isAttacking && !m_prevAttackState)
+    // プレイヤーとの距離を算出
+    D3DXVECTOR3 diff = pPlayer->GetPos() - pEnemy->GetPos();
+    float distance = D3DXVec3Length(&diff);
+
+    // ある程度近づいて攻撃開始した瞬間だけカウント
+    if (isAttacking && !m_prevAttackState && distance < 150.0f)
     {
         m_log.attackCountEvening += 2;
+
+        if (m_log.attackCountEvening >= 100)
+        {
+            m_log.attackCountEvening = 100;
+        }
     }
 
     // 次のフレームのために記録

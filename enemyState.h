@@ -26,6 +26,7 @@ class CEnemy_CloseAttackState1;
 class CEnemy_CloseAttackState2;
 class CEnemy_CautionState;
 class CEnemy_EvadeState;
+class CEnemy_GuardState;
 
 //*****************************************************************************
 // 待機状態
@@ -81,6 +82,10 @@ public:
 
 		case CEnemy::EEnemyAction::AI_EVADE:
 			m_pMachine->ChangeState<CEnemy_EvadeState>();
+			break;
+
+		case CEnemy::EEnemyAction::AI_GUARD:
+			m_pMachine->ChangeState<CEnemy_GuardState>();
 			break;
 
 		default:
@@ -182,14 +187,17 @@ public:
 		case CEnemy::EEnemyAction::AI_ACCUMULATE:
 			m_pMachine->ChangeState<CEnemy_AcuumulationState>();
 			break;
-		case CEnemy::EEnemyAction::AI_CLOSE_ATTACK_01:
-			m_pMachine->ChangeState<CEnemy_CloseAttackState1>();
-			break;
+		//case CEnemy::EEnemyAction::AI_CLOSE_ATTACK_01:
+		//	m_pMachine->ChangeState<CEnemy_CloseAttackState1>();
+		//	break;
 		case CEnemy::EEnemyAction::AI_CAUTION:
 			m_pMachine->ChangeState<CEnemy_CautionState>();
 			break;
 		case CEnemy::EEnemyAction::AI_EVADE:
 			m_pMachine->ChangeState<CEnemy_EvadeState>();
+			break;
+		case CEnemy::EEnemyAction::AI_GUARD:
+			m_pMachine->ChangeState<CEnemy_GuardState>();
 			break;
 		default:
 			break;
@@ -715,7 +723,7 @@ public:
 	}
 
 private:
-	float m_verticalVelocity; // 上下方向速度
+
 };
 
 
@@ -1016,7 +1024,7 @@ public:
 			D3DXVECTOR3 forwardDir = m_slideDir;
 			D3DXVec3Normalize(&forwardDir, &forwardDir);
 
-			float forwardPower = 20.0f; // 滑る速度
+			float forwardPower = 60.0f; // 滑る速度
 			move = forwardDir * forwardPower;
 		}
 		else
@@ -1083,7 +1091,7 @@ private:
 		D3DXVec3Normalize(&m_slideDir, &m_slideDir);
 
 		// スライド移動
-		float slidePower = 380.0f;
+		float slidePower = 180.0f;
 		D3DXVECTOR3 move = m_slideDir * slidePower;
 
 		pEnemy->SetMove(move);
@@ -1095,6 +1103,92 @@ private:
 		velocity.setZ(move.z);
 		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
 	}
+};
+
+//*****************************************************************************
+// ガード状態
+//*****************************************************************************
+class CEnemy_GuardState :public StateBase<CEnemy>
+{
+public:
+
+	void OnStart(CEnemy* pEnemy)override
+	{
+		// ガードモーション
+		pEnemy->GetMotion()->StartBlendMotion(CEnemy::GUARD, 10);
+
+		// 向いている方向の後ろ
+		D3DXVECTOR3 dir = -pEnemy->GetForward();
+
+		// 正規化
+		D3DXVec3Normalize(&dir, &dir);
+
+		float backPower = 13.0f;// スライドパワー
+
+		D3DXVECTOR3 move = dir * backPower;
+
+		// 現在の移動量に上書き
+		pEnemy->SetMove(move);
+
+		// 物理速度にも即反映
+		btVector3 velocity = pEnemy->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setZ(move.z);
+		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
+
+		// プレイヤーへの方向ベクトル
+		D3DXVECTOR3 toPlayer = CGame::GetPlayer()->GetPos() - pEnemy->GetPos();
+
+		toPlayer.y = 0.0f; // 水平方向のみ
+		D3DXVec3Normalize(&toPlayer, &toPlayer);
+
+		// 目標の角度を算出
+		float targetYaw = atan2f(-toPlayer.x, -toPlayer.z);
+
+		// 目的角度を設定（X,Zはそのまま）
+		D3DXVECTOR3 rotDest = pEnemy->GetRot();
+		rotDest.y = targetYaw;
+
+		// 敵に目的角度を設定
+		pEnemy->SetRotDest(rotDest);
+
+		// 補間して回転
+		pEnemy->UpdateRotation(0.5f);
+
+	}
+
+	void OnUpdate(CEnemy* pEnemy)override
+	{
+		D3DXVECTOR3 move = pEnemy->GetMove();
+
+		move *= 0.90f; // 減速率
+		if (fabsf(move.x) < 0.01f) move.x = 0;
+		if (fabsf(move.z) < 0.01f) move.z = 0;
+
+		// 移動量を設定
+		pEnemy->SetMove(move);
+
+		// リジッドボディに反映
+		btVector3 velocity = pEnemy->GetRigidBody()->getLinearVelocity();
+		velocity.setX(move.x);
+		velocity.setZ(move.z);
+		pEnemy->GetRigidBody()->setLinearVelocity(velocity);
+
+		// モーション終了後に攻撃
+		if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::GUARD))
+		{
+			// 待機状態
+			m_pMachine->ChangeState<CEnemy_AttackState1>();
+		}
+	}
+
+	void OnExit(CEnemy* /*pEnemy*/)override
+	{
+
+	}
+
+private:
+
 };
 
 #endif

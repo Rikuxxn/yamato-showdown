@@ -19,6 +19,7 @@
 CResultTime* CResult::m_pTime = nullptr;					// タイムへのポインタ
 int CResult::m_nClearMinutes = 0;
 int CResult::m_nClearSeconds = 0;
+int CResult::m_clearRankIndex = 0;
 
 //=============================================================================
 // コンストラクタ

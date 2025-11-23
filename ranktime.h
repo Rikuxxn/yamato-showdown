@@ -32,9 +32,11 @@ public:
 	void Uninit(void);
 	void Update(void);
 	void Draw(void);
-	void SetRankList(const std::vector<std::pair<int, int>>& rankList);
 
-	D3DXVECTOR3 GetPos(void);
+	void SetRankList(const std::vector<std::pair<int, int>>& rankList);
+	void ShowNewRankEffect(int rankIndex);
+
+	D3DXVECTOR3 GetPos(void) { return D3DXVECTOR3(); }
 
 private:
 	static constexpr int MaxRanking = 5;	// ï\é¶êî

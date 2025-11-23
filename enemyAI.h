@@ -33,7 +33,7 @@ public:
 	};
 
 	void Update(CEnemy* pEnemy, CPlayer* pPlayer);
-	void RecordPlayerAction(void);
+	void RecordPlayerAction(CEnemy* pEnemy, CPlayer* pPlayer);
 	void SetAccumulateCooldown(int nTime) { m_afterAttackCooldown = nTime * 60; }
 
 private:

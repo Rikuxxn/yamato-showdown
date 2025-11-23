@@ -178,7 +178,7 @@ void CRankTime::Draw(void)
 //=============================================================================
 void CRankTime::SetRankList(const std::vector<std::pair<int, int>>& rankList)
 {
-	for (int i = 0; i < rankList.size() && i < MaxRanking; i++)
+	for (size_t i = 0; i < rankList.size() && i < MaxRanking; i++)
 	{
 		int min10 = rankList[i].first / 10;
 		int min1 = rankList[i].first % 10;
@@ -192,11 +192,23 @@ void CRankTime::SetRankList(const std::vector<std::pair<int, int>>& rankList)
 	}
 }
 //=============================================================================
-// 位置の取得
+// ランクインエフェクトの表示
 //=============================================================================
-D3DXVECTOR3 CRankTime::GetPos(void)
+void CRankTime::ShowNewRankEffect(int rankIndex)
 {
-	return D3DXVECTOR3();
+	if (rankIndex < 0 || rankIndex >= MaxRanking)
+	{
+		return;
+	}
+
+	for (int n = 0; n < DIGITS; n++)
+	{
+		if (m_apNumber[rankIndex][n])
+		{
+			// ランクインのスケールアニメーション
+			m_apNumber[rankIndex][n]->SetScaleAnim();
+		}
+	}
 }
 
 

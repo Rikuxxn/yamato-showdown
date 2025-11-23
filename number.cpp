@@ -11,6 +11,7 @@
 #include "number.h"
 #include "renderer.h"
 #include "manager.h"
+#include "easing.h"
 
 //=============================================================================
 // コンストラクタ
@@ -24,6 +25,10 @@ CNumber::CNumber()
 	m_digit		= 0;		// 桁
 	m_fWidth	= 0.0f;		// 幅
 	m_fHeight	= 0.0f;		// 高さ
+	m_scale		= 0.0f;		// 拡大率
+	m_easeTime	= 0.0f;		// タイマー
+	m_easeSpeed = 0.0f;		// tの進むスピード
+	m_isExpanding = false;	// true : 拡大, false : 縮小
 }
 //=============================================================================
 // デストラクタ
@@ -119,6 +124,34 @@ void CNumber::Uninit(void)
 //=============================================================================
 void CNumber::Update(void)
 {
+	// スケール更新（拡大縮小ループ）
+	if (m_easeSpeed != 0.0f)
+	{
+		// 時間を進める
+		m_easeTime += (m_isExpanding ? m_easeSpeed : -m_easeSpeed);
+
+		// 上限到達 → 縮小に切り替え
+		if (m_easeTime >= 1.0f)
+		{
+			m_easeTime = 1.0f;
+			m_isExpanding = false;
+		}
+
+		// 下限到達 → 拡大に切り替え
+		if (m_easeTime <= 0.0f)
+		{
+			m_easeTime = 0.0f;
+			m_isExpanding = true;
+		}
+
+		// イージング適用
+		m_scale = CEasing::Ease(1.0f, MAX_SCALE, m_easeTime, CEasing::EaseInOutSine);
+	}
+	else
+	{
+		m_scale = 1.0f;
+	}
+
 	// UV計算（1桁10分割の場合）
 	const float digitWidthUV = 1.0f / 10.0f;
 	float tu = m_digit * digitWidthUV;
@@ -128,6 +161,17 @@ void CNumber::Update(void)
 
 	// 頂点バッファをロックし、頂点情報へのポインタを取得
 	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
+
+	// 頂点座標に scale を反映（中心拡大）
+	float w = m_fWidth * m_scale;
+	float h = m_fHeight * m_scale;
+	float cx = m_pos.x + m_fWidth * 0.5f;
+	float cy = m_pos.y + m_fHeight * 0.5f;
+
+	pVtx[0].pos = D3DXVECTOR3(cx - w * 0.5f, cy - h * 0.5f, 0.0f);
+	pVtx[1].pos = D3DXVECTOR3(cx + w * 0.5f, cy - h * 0.5f, 0.0f);
+	pVtx[2].pos = D3DXVECTOR3(cx - w * 0.5f, cy + h * 0.5f, 0.0f);
+	pVtx[3].pos = D3DXVECTOR3(cx + w * 0.5f, cy + h * 0.5f, 0.0f);
 
 	// UV座標の更新（テクスチャの一部を数字ごとに切り替える）
 	pVtx[0].tex = D3DXVECTOR2(tu, 0.0f);   // 左上
@@ -172,9 +216,11 @@ void CNumber::SetDigit(int digit)
 	m_digit = digit;
 }
 //=============================================================================
-// 位置の設定処理
+// スケールアニメーション設定処理
 //=============================================================================
-void CNumber::SetPos(D3DXVECTOR3 pos)
+void CNumber::SetScaleAnim(void)
 {
-	m_pos = pos;
+	m_easeTime = 0.0f;       // アニメーション開始位置
+	m_isExpanding = true;    // 拡大
+	m_easeSpeed = 0.03f;     // t の増加量（速度）
 }

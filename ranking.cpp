@@ -11,6 +11,7 @@
 #include "ranking.h"
 #include "manager.h"
 #include "input.h"
+#include "result.h"
 
 // 名前空間stdの使用
 using namespace std;
@@ -53,6 +54,14 @@ HRESULT CRanking::Init(void)
 
 		// タイムリストの設定
 		m_pRankTime->SetRankList(rankList);
+
+		int  rankIndex = CResult::GetClearRank();
+
+		if (rankIndex >= 0 && rankIndex < static_cast<int>(rankList.size()))
+		{
+			// ランクインアニメーション
+			m_pRankTime->ShowNewRankEffect(rankIndex);
+		}
 	}
 
 	return S_OK;

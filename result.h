@@ -29,9 +29,11 @@ public:
 	void Update(void);
 	void Draw(void);
 	static void SetClearTime(int min, int sec) { m_nClearMinutes = min; m_nClearSeconds = sec; }
+	static void SetClearRank(int idx) { m_clearRankIndex = idx; }
 
 	static int GetClearMinutes(void) { return m_nClearMinutes; }
 	static int GetClearSeconds(void) { return m_nClearSeconds; }
+	static int GetClearRank(void) { return m_clearRankIndex; }
 
 	static void ResetLight(void);
 	void OnDeviceReset(void) override;
@@ -42,6 +44,8 @@ private:
 	static CResultTime* m_pTime;			// タイムへのポインタ
 	static int m_nClearMinutes;				// クリアタイム(分)
 	static int m_nClearSeconds;				// クリアタイム(秒)
+	static int m_clearRankIndex;
+
 	CLight* m_pLight;						// ライトへのポインタ
 	CBlockManager* m_pBlockManager;	// ブロックマネージャーへのポインタ
 };

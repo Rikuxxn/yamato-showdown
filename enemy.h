@@ -49,6 +49,7 @@ public:
 		SLIDEMOVE,			// スライド移動
 		CAUTION,			// 警戒
 		EVADE,				// 回避
+		GUARD,				// ガード
 		MAX
 	}ENEMY_MOTION;
 
@@ -65,6 +66,7 @@ public:
 		AI_SLIDEMOVE,
 		AI_CAUTION,
 		AI_EVADE,
+		AI_GUARD,
 		AI_MAX
 	}EEnemyAction;
 

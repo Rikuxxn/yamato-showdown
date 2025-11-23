@@ -30,6 +30,7 @@ private:
 
     static CRankingManager* m_Instance;
 
+    int m_rankIdx;// 順位のインデックス
 public:
 	CRankingManager();
 	~CRankingManager();
@@ -73,6 +74,7 @@ public:
     }
 
     const std::vector<RankData>& GetList(void) const { return m_rankList; }
+    int GetRankIdx(void) { return m_rankIdx; }
 
     void Save(void);
     void Load(void);
@@ -106,18 +108,30 @@ private:
         m_rankList.push_back(data);
 
         // ソート（速い順）
-        std::sort(m_rankList.begin(), m_rankList.end(), [](const RankData& a, const RankData& b) {
+        std::sort(m_rankList.begin(), m_rankList.end(), [](const RankData& a, const RankData& b)
+        {
             if (a.minutes == b.minutes)
             {
                 return a.seconds < b.seconds;
             }
             return a.minutes < b.minutes;
-            });
+        });
 
         // 上位5件に制限
         if (m_rankList.size() > MAX_RANK)
         {
             m_rankList.resize(MAX_RANK);
+        }
+
+        // 実際に何位に入ったかを探す（上位5件の中で）
+        m_rankIdx = -1; // 初期値はランクイン無し
+        for (size_t i = 0; i < m_rankList.size(); i++)
+        {
+            if (m_rankList[i].minutes == data.minutes && m_rankList[i].seconds == data.seconds)
+            {
+                m_rankIdx = static_cast<int>(i);
+                break;
+            }
         }
 
         // 保存

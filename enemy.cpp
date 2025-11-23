@@ -273,16 +273,17 @@ D3DXVECTOR3 CEnemy::GetForward(void)
 //=============================================================================
 void CEnemy::Damage(float fDamage)
 {
-	if (!m_pMotion->IsCurrentMotion(DAMAGE))
+	if (!m_pMotion->IsCurrentMotion(DAMAGE) && !m_pMotion->IsCurrentMotion(GUARD))
 	{
 		// まず共通のHP処理
 		CCharacter::Damage(fDamage);
-	}
 
-	if (!m_pMotion->IsCurrentMotion(ACCUMULATION))
-	{
-		// ダメージステートへ
-		m_stateMachine.ChangeState<CEnemy_DamageState>();
+		if (!m_pMotion->IsCurrentMotion(ACCUMULATION) && !m_pMotion->IsCurrentMotion(GUARD) &&
+			m_pMotion->IsCurrentMotion(CLOSE_ATTACK_01))
+		{
+			// ダメージステートへ
+			m_stateMachine.ChangeState<CEnemy_DamageState>();
+		}
 	}
 
 	// 死亡時
