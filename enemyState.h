@@ -644,8 +644,31 @@ public:
 		if (pEnemy->GetMotion()->IsCurrentMotionEnd(CEnemy::CLOSE_ATTACK_02))
 		{// 近距離攻撃モーションが終わっていたら
 
-			// 溜め状態
-			m_pMachine->ChangeState<CEnemy_AcuumulationState>();
+			// AIリクエストによるステート遷移
+			switch (pEnemy->GetRequestedAction())
+			{
+			case CEnemy::EEnemyAction::AI_NEUTRAL:
+				pEnemy->SetRequestedAction(CEnemy::EEnemyAction::AI_NEUTRAL);
+				m_pMachine->ChangeState<CEnemy_StandState>();
+				break;
+			case CEnemy::EEnemyAction::AI_MOVE:
+				m_pMachine->ChangeState<CEnemy_MoveState>();
+				break;
+			case CEnemy::EEnemyAction::AI_ACCUMULATE:
+				m_pMachine->ChangeState<CEnemy_AcuumulationState>();
+				break;
+			case CEnemy::EEnemyAction::AI_CAUTION:
+				m_pMachine->ChangeState<CEnemy_CautionState>();
+				break;
+			case CEnemy::EEnemyAction::AI_EVADE:
+				m_pMachine->ChangeState<CEnemy_EvadeState>();
+				break;
+			case CEnemy::EEnemyAction::AI_GUARD:
+				m_pMachine->ChangeState<CEnemy_GuardState>();
+				break;
+			default:
+				break;
+			}
 
 			return;
 		}
@@ -959,6 +982,14 @@ public:
 		{
 			// 溜め状態
 			m_pMachine->ChangeState<CEnemy_AcuumulationState>();
+			return;
+		}
+
+		// 警戒中に攻撃を受けたら
+		if (pEnemy->GetWeaponCollider()->IsHit())
+		{
+			// 回避状態
+			m_pMachine->ChangeState<CEnemy_EvadeState>();
 			return;
 		}
 

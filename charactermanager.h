@@ -44,7 +44,7 @@ public:
     void UpdateRotation(float fInterpolationSpeed);
 
     // HPゲージの設定処理
-    void SetGuages(D3DXVECTOR3 pos, float fWidth, float fHeight)
+    void SetGuages(D3DXVECTOR3 pos, D3DXCOLOR colHP, D3DXCOLOR colBack, float fWidth, float fHeight)
     {
         m_pFrame = CGuage::Create(CGuage::TYPE_FRAME, pos, fWidth, fHeight);// 枠
         m_pBackGuage = CGuage::Create(CGuage::TYPE_BACKGUAGE, pos, fWidth, fHeight);// バックゲージ
@@ -54,6 +54,10 @@ public:
         m_pFrame->SetTargetCharacter(this);
         m_pBackGuage->SetTargetCharacter(this);
         m_pHpGuage->SetTargetCharacter(this);
+
+        // 色の設定
+        m_pHpGuage->SetCol(colHP);
+        m_pBackGuage->SetCol(colBack);
     }
 
     // ダメージ処理

@@ -49,6 +49,7 @@ CEnemy* CEnemy::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot)
 
 	pEnemy->SetPos(pos);
 	pEnemy->SetRot(D3DXToRadian(rot));
+	pEnemy->SetSize(D3DXVECTOR3(1.1f, 1.1f, 1.1f));
 
 	// 初期化処理
 	pEnemy->Init();
@@ -116,7 +117,7 @@ HRESULT CEnemy::Init(void)
 	SetHp(100.0f);
 
 	// ゲージを生成
-	SetGuages(D3DXVECTOR3(570.0f, 100.0f, 0.0f), 620.0f, 10.0f);
+	SetGuages({ 570.0f, 100.0f, 0.0f }, { 1.0f,0.0f,0.0f,1.0f }, { 0.1f,0.1f,0.1f,1.0f }, 620.0f, 10.0f);
 
 	return S_OK;
 }
@@ -258,7 +259,7 @@ void CEnemy::Draw(void)
 //=============================================================================
 D3DXVECTOR3 CEnemy::GetForward(void)
 {
-	// プレイヤーの回転角度（Y軸）から前方ベクトルを計算
+	// 回転角度（Y軸）から前方ベクトルを計算
 	float yaw = GetRot().y;
 
 	D3DXVECTOR3 forward(-sinf(yaw), 0.0f, -cosf(yaw));

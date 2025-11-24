@@ -104,7 +104,7 @@ HRESULT CTitle::Init(void)
 
 	ImageInfo images[1] =
 	{
-		   { D3DXVECTOR3(420.0f, 270.0f, 0.0f), 320.0f, 220.0f },	// タイトルロゴ
+		   { D3DXVECTOR3(420.0f, 270.0f, 0.0f), 320.0f, 130.0f },	// タイトルロゴ
 	};
 
 	for (int nCnt = 0; nCnt < 1; nCnt++)

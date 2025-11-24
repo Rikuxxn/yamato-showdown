@@ -57,7 +57,7 @@ CPlayer* CPlayer::Create(D3DXVECTOR3 pos, D3DXVECTOR3 rot)
 
 	pPlayer->SetPos(pos);
 	pPlayer->SetRot(D3DXToRadian(rot));
-	pPlayer->SetSize(D3DXVECTOR3(1.1f, 1.1f, 1.1f));
+	pPlayer->SetSize(D3DXVECTOR3(1.2f, 1.2f, 1.2f));
 
 	// èâä˙âªèàóù
 	pPlayer->Init();
@@ -125,7 +125,7 @@ HRESULT CPlayer::Init(void)
 	SetHp(10.0f);
 
 	// ÉQÅ[ÉWÇê∂ê¨
-	SetGuages(D3DXVECTOR3(100.0f, 800.0f, 0.0f), 420.0f, 20.0f);
+	SetGuages({ 100.0f, 800.0f, 0.0f }, { 0.0f,1.0f,0.0f,1.0f }, { 1.0f,0.0f,0.0f,1.0f }, 420.0f, 20.0f);
 
 	return S_OK;
 }

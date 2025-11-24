@@ -97,12 +97,12 @@ HRESULT CGame::Init(void)
 
 	//// UI生成
 	//auto ui = CUIBase::Create(210.0f, 855.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 160.0f, 35.0f);
-	//auto uiTex = CUIBase::Create("data/TEXTURE/ui_pause.png", 210.0f, 555.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 160.0f, 35.0f);
+	auto enemyName = CUIBase::Create("data/TEXTURE/ui_enemyname.png", 880.0f, 60.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 130.0f, 30.0f);
 	//auto enemyName = CUIText::Create("宮本 武蔵", 880.0f, 60.0f, 28, D3DXCOLOR(1.0f, 0.1f, 0.1f, 1.0f));
 
 	//// UI登録
 	//CUIManager::GetInstance()->AddUI("test", ui);
-	//CUIManager::GetInstance()->AddUI("tex", uiTex);
+	CUIManager::GetInstance()->AddUI("EnemyName", enemyName);
 	//CUIManager::GetInstance()->AddUI("EnemyName", enemyName);
 
 	//// ポーズUIの生成
