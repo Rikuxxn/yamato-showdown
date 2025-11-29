@@ -114,9 +114,24 @@ public:
 
 	int GetCollisionFlags(void) const override { return btCollisionObject::CF_NO_CONTACT_RESPONSE; }
 
+	void LoadFromJson(const json& b) override
+	{
+		CBlock::LoadFromJson(b);
+
+		// 初期角度を m_rotY に度数で保存
+		D3DXVECTOR3 rot = GetRot();             // ラジアン
+		m_baseRotY = D3DXToDegree(rot.y);       // 度に変換して基準角度
+		m_rotY = m_baseRotY;                    // 現在角度も同じ
+	}
+
 	void Update(void);
 
 private:
+	static constexpr float ROT_LIMIT = 90.0f;
+	static constexpr float ROT_SPEED = 0.1f;
+
+	float m_baseRotY;	// 基準の角度
+	float m_rotY;		// Y角度
 
 };
 
@@ -126,7 +141,7 @@ private:
 class CExitBlock : public CBlock
 {
 public:
-	CExitBlock();
+	CExitBlock(int nPriority = 5);
 	~CExitBlock();
 
 	static TYPE GetStaticType(void) { return TYPE_GHOSTOBJECT; }

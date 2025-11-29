@@ -33,6 +33,7 @@ CObjectX::CObjectX(int nPriority) : CObject(nPriority)
 	m_dwNumMat		= NULL;					// マテリアル数
 	m_mtxWorld		= {};					// ワールドマトリックス
 	m_modelSize		= INIT_VEC3;			// モデルの元サイズ（全体の幅・高さ・奥行き）
+	m_isGhostObject = false;				// ゴーストオブジェクト(透明)かどうか
 }
 //=============================================================================
 // デストラクタ
@@ -249,6 +250,12 @@ void CObjectX::Draw(void)
 	// 色の取得
 	D3DXCOLOR col = GetCol();
 
+	// ゴーストオブジェクトなら透明度補正
+	if (IsGhostObject())
+	{
+		col.a = 0.0f;// 透明にする
+	}
+
 	for (int nCntMat = 0; nCntMat < (int)m_dwNumMat; nCntMat++)
 	{
 #ifdef _DEBUG
@@ -290,7 +297,6 @@ void CObjectX::Draw(void)
 
 	// 保存していたマテリアルを戻す
 	pDevice->SetMaterial(&matDef);
-
 }
 //=============================================================================
 // マテリアルの取得

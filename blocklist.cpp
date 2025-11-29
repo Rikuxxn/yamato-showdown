@@ -334,7 +334,8 @@ void CBuriedTreasureBlock::Update(void)
 CDoorBlock::CDoorBlock()
 {
 	// 値のクリア
-
+	m_baseRotY;	// 基準の角度
+	m_rotY;		// Y角度
 }
 //=============================================================================
 // 扉ブロックのデストラクタ
@@ -351,14 +352,44 @@ void CDoorBlock::Update(void)
 	// ブロックの更新処理
 	CBlock::Update();
 
+	// 初期角度が正なら -90°回転、負なら +90°回転
+	float targetRotY = m_baseRotY + ((m_baseRotY >= 0.0f) ? -ROT_LIMIT : +ROT_LIMIT);
+
+	// 補間処理
+	if (m_rotY < targetRotY)
+	{
+		m_rotY += ROT_SPEED;
+
+		if (m_rotY > targetRotY)
+		{
+			m_rotY = targetRotY;
+		}
+	}
+	else if (m_rotY > targetRotY)
+	{
+		m_rotY -= ROT_SPEED;
+
+		if (m_rotY < targetRotY)
+		{
+			m_rotY = targetRotY;
+		}
+	}
+
+	// 回転を適用（ラジアンに変換）
+	D3DXVECTOR3 rot = GetRot();
+	rot.y = D3DXToRadian(m_rotY);
+	SetRot(rot);
 }
 
 
 //=============================================================================
 // 出口判定ブロックのコンストラクタ
 //=============================================================================
-CExitBlock::CExitBlock()
+CExitBlock::CExitBlock(int nPriority) : CBlock(nPriority)
 {
+	// ゴーストオブジェクト化
+	SetGhostObject(true);
+
 	// 値のクリア
 	m_isEscape = false;
 }
@@ -370,7 +401,7 @@ CExitBlock::~CExitBlock()
 	// なし
 }
 //=============================================================================
-// 出口判定ブロックのデ更新処理
+// 出口判定ブロックの更新処理
 //=============================================================================
 void CExitBlock::Update(void)
 {

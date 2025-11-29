@@ -31,6 +31,7 @@ public:
 	void SetSize(D3DXVECTOR3 size) { m_size = size; }
 	void SetPos(D3DXVECTOR3 pos) { m_pos = pos; }
 	void SetRot(D3DXVECTOR3 rot) { m_rot = rot; }
+	void SetGhostObject(bool flag) { m_isGhostObject = flag; }
 
 	const char* GetPath(void) { return m_szPath; }
 	D3DXVECTOR3 GetPos(void) { return m_pos; }
@@ -39,6 +40,7 @@ public:
 	D3DXVECTOR3 GetModelSize(void) { return m_modelSize; }	// モデルの元サイズ
 	virtual D3DXCOLOR GetCol(void) const { return D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f); }
 	D3DXCOLOR GetMaterialColor(void) const;
+	bool IsGhostObject(void) const { return m_isGhostObject; }
 
 private:
 	int* m_nIdxTexture;
@@ -52,6 +54,7 @@ private:
 	D3DXMATRIX m_mtxWorld;				// ワールドマトリックス
 	char m_szPath[MAX_PATH];			// ファイルパス
 	D3DXVECTOR3 m_modelSize;			// モデルの元サイズ（全体の幅・高さ・奥行き）
+	bool m_isGhostObject;				// ゴーストオブジェクト(透明)かどうか
 };
 
 #endif

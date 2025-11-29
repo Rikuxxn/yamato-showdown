@@ -89,6 +89,9 @@ HRESULT CGame::Init(void)
 	// マップランダム生成
 	m_pBlockManager->GenerateRandomMap(m_nSeed);
 
+	//// 配置情報の読み込み
+	//m_pBlockManager->LoadFromJson("data/game_info.json");
+
 	// タイムの生成
 	m_pTime = CTime::Create(3, 0, 760.0f, 10.0f, 42.0f, 58.0f);
 
