@@ -43,8 +43,7 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
     // 行動を記録
     RecordPlayerAction(pEnemy, pPlayer);
 
-    bool isEnemyAttacking = pEnemy->GetMotion()->IsCurrentMotion(CEnemy::CLOSE_ATTACK_01);
-    bool playerIsAttacking = pPlayer->GetMotion()->IsCurrentMotion(CPlayer::ATTACK_01);
+    //bool isEnemyAttacking = pEnemy->GetMotion()->IsCurrentMotion(CEnemy::CLOSE_ATTACK_01);
 
     //// 敵が攻撃中にプレイヤーが攻撃してきた場合
     //if (isEnemyAttacking && playerIsAttacking)
@@ -81,8 +80,8 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
     // --- 夜にプレイヤーが灯籠 または 水に入ったら ---
     if (isNight && (playerInTorch || playerInWater))
     {
-        // 溜め状態
-        pEnemy->SetRequestedAction(CEnemy::AI_ACCUMULATE);
+        // 移動状態
+        pEnemy->SetRequestedAction(CEnemy::AI_MOVE);
         return;
     }
 
@@ -104,21 +103,17 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
         return;
     }
 
-    if (distance < 180.0f)
+    if (distance < 260.0f)
     {
         // プレイヤーが攻撃してきた回数による回避確率
-        float evadeRate = std::min(0.5f, m_log.attackCountEvening * 0.05f);
-        float guardRate = 0.8f; // ガード
+        float evadeRate = 0.1f + std::min(0.5f, m_log.attackCountEvening / 100.0f);
 
         int r = rand() % 100;
 
-        if (r < evadeRate)
+        if (r < (int)(evadeRate * 100))
         {
-            pEnemy->SetRequestedAction(CEnemy::AI_EVADE);
-        }
-        else if (playerIsAttacking && r < evadeRate + guardRate)
-        {
-            pEnemy->SetRequestedAction(CEnemy::AI_GUARD);
+
+
         }
         else
         {
@@ -126,17 +121,21 @@ void CEnemyAI::Update(CEnemy* pEnemy, CPlayer* pPlayer)
             {
                 pEnemy->SetRequestedAction(CEnemy::AI_CLOSE_ATTACK_01);
             }
+            else
+            {
+                pEnemy->SetRequestedAction(CEnemy::AI_NEUTRAL);
+            }
         }
     }
-    else if (distance < 250.0f)
+    else if (distance < 300.0f)
     {
         if (m_afterAttackCooldown <= 0)
         {
             int r = rand() % 100;
-            if (r < 30)
+            if (r < 50)
             {
-                // 溜め状態
-                pEnemy->SetRequestedAction(CEnemy::EEnemyAction::AI_ACCUMULATE);
+
+
             }
             else
             {
@@ -165,27 +164,12 @@ void CEnemyAI::RecordPlayerAction(CEnemy* pEnemy, CPlayer* pPlayer)
     float progress = CGame::GetTime()->GetProgress(); // 0.0～0.1
 
     bool isInGrass = CGame::GetBlockManager()->IsPlayerInGrass();
-    bool isAttacking = pPlayer->GetMotion()->IsCurrentMotion(CPlayer::ATTACK_01);
 
-    // プレイヤーとの距離を算出
-    D3DXVECTOR3 diff = pPlayer->GetPos() - pEnemy->GetPos();
-    float distance = D3DXVec3Length(&diff);
+    //// プレイヤーとの距離を算出
+    //D3DXVECTOR3 diff = pPlayer->GetPos() - pEnemy->GetPos();
+    //float distance = D3DXVec3Length(&diff);
 
-    // ある程度近づいて攻撃開始した瞬間だけカウント
-    if (isAttacking && !m_prevAttackState && distance < 150.0f)
-    {
-        m_log.attackCountEvening += 2;
-
-        if (m_log.attackCountEvening >= 100)
-        {
-            m_log.attackCountEvening = 100;
-        }
-    }
-
-    // 次のフレームのために記録
-    m_prevAttackState = isAttacking;
-
-    // 夜 : 草むらに潜む
+    // 夜 : 草むらに潜んでいるとき
     if (progress < 0.30f && progress >= 0.90f)
     {
         if (isInGrass)

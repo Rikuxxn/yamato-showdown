@@ -97,12 +97,12 @@ HRESULT CGame::Init(void)
 
 	//// UI生成
 	//auto ui = CUIBase::Create(210.0f, 855.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 160.0f, 35.0f);
-	auto enemyName = CUIBase::Create("data/TEXTURE/ui_enemyname.png", 880.0f, 60.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 130.0f, 30.0f);
+	//auto enemyName = CUIBase::Create("data/TEXTURE/ui_enemyname.png", 880.0f, 60.0f, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f), 130.0f, 30.0f);
 	//auto enemyName = CUIText::Create("宮本 武蔵", 880.0f, 60.0f, 28, D3DXCOLOR(1.0f, 0.1f, 0.1f, 1.0f));
 
 	//// UI登録
 	//CUIManager::GetInstance()->AddUI("test", ui);
-	CUIManager::GetInstance()->AddUI("EnemyName", enemyName);
+	//CUIManager::GetInstance()->AddUI("EnemyName", enemyName);
 	//CUIManager::GetInstance()->AddUI("EnemyName", enemyName);
 
 	//// ポーズUIの生成
@@ -202,26 +202,26 @@ void CGame::Update(void)
 	// ブロックマネージャーの更新処理
 	m_pBlockManager->Update();
 
-	// 敵を倒したらクリア
-	if (pFade->GetFade() == CFade::FADE_NONE && CGame::GetEnemy()->IsDeath())
-	{
-		// ランキングに登録
-		m_pRankingManager->AddRecordWithLimit(3, 0, m_pTime->GetMinutes(), m_pTime->GetnSeconds());
+	//// 脱出したらクリア
+	//if (pFade->GetFade() == CFade::FADE_NONE && CGame::GetEnemy()->IsDeath())
+	//{
+	//	// ランキングに登録
+	//	m_pRankingManager->AddRecordWithLimit(3, 0, m_pTime->GetMinutes(), m_pTime->GetnSeconds());
 
-		// 順位のインデックスを取得
-		int rankIndex = m_pRankingManager->GetRankIdx();
+	//	// 順位のインデックスを取得
+	//	int rankIndex = m_pRankingManager->GetRankIdx();
 
-		// リザルトにセット
-		CResult::SetClearRank(rankIndex);// アニメーション用に順位のインデックスを渡す
-		CResult::SetClearTime(m_pTime->GetMinutes(), m_pTime->GetnSeconds());
+	//	// リザルトにセット
+	//	CResult::SetClearRank(rankIndex);// アニメーション用に順位のインデックスを渡す
+	//	CResult::SetClearTime(m_pTime->GetMinutes(), m_pTime->GetnSeconds());
 
-		// リザルト画面に移行
-		pFade->SetFade(MODE_RESULT);
-	}
-	else if (pFade->GetFade() == CFade::FADE_NONE && m_pTime->IsTimeUp() ||
+	//	// リザルト画面に移行
+	//	pFade->SetFade(MODE_RESULT);
+	//}
+
+	if (pFade->GetFade() == CFade::FADE_NONE && m_pTime->IsTimeUp() ||
 		m_pPlayer->IsDead())
 	{// 時間切れ または プレイヤー死亡
-
 		// ゲームオーバー画面に移行
 		pFade->SetFade(MODE_GAMEOVER);
 	}

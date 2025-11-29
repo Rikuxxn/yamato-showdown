@@ -28,16 +28,11 @@ CPlayer::CPlayer()
 	memset(m_apModel, 0, sizeof(m_apModel));			// モデル(パーツ)へのポインタ
 	m_mtxWorld			= {};							// ワールドマトリックス
 	m_nNumModel			= 0;							// モデル(パーツ)の総数
-	m_playerUse			= true;							// 使われているかどうか
 	m_pShadowS			= nullptr;						// ステンシルシャドウへのポインタ
 	m_pMotion			= nullptr;						// モーションへのポインタ
 	m_bIsMoving			= false;						// 移動入力フラグ
 	m_bOnGround			= false;						// 接地フラグ
 	m_pDebug3D			= nullptr;						// 3Dデバッグ表示へのポインタ
-	m_pSwordModel		= nullptr;						// 武器モデルのポインタ
-	m_pWeaponCollider	= nullptr;						// 武器の当たり判定へのポインタ
-	m_pTipModel			= nullptr;						// 武器コライダー用モデル
-	m_pBaseModel		= nullptr;						// 武器コライダー用モデル
 	m_isInGrass			= false;
 	m_isInTorch			= false;
 }
@@ -82,28 +77,10 @@ HRESULT CPlayer::Init(void)
 		// オフセット考慮
 		m_apModel[nCnt]->SetOffsetPos(m_apModel[nCnt]->GetPos());
 		m_apModel[nCnt]->SetOffsetRot(m_apModel[nCnt]->GetRot());
-
-		// 名前に weapon が含まれていたら武器パーツと認識
-		if (strstr(m_apModel[nCnt]->GetPath(), "weapon") != nullptr)
-		{
-			m_pSwordModel = m_apModel[nCnt];
-		}
 	}
 
 	// パーツ数を代入
 	m_nNumModel = nNumModels;
-
-	// 武器コライダーの生成
-	m_pWeaponCollider = make_unique<CWeaponCollider>();
-
-#ifdef _DEBUG
-	// 武器コライダーモデルの生成
-	m_pTipModel = CObjectX::Create("data/MODELS/weapon_collider.x", m_pWeaponCollider->GetCurrentTipPos(), INIT_VEC3, D3DXVECTOR3(1.0f, 1.0f, 1.0f));
-	m_pBaseModel = CObjectX::Create("data/MODELS/weapon_collider.x", m_pWeaponCollider->GetCurrentBasePos(), INIT_VEC3, D3DXVECTOR3(1.0f, 1.0f, 1.0f));
-#endif
-
-	// プレイヤーが使われている
-	m_playerUse = true;
 
 	// 最初の向き
 	SetRot(D3DXVECTOR3(0.0f, -D3DX_PI, 0.0f));
@@ -169,9 +146,6 @@ void CPlayer::Update(void)
 	// 接地判定
 	m_bOnGround = OnGround(CManager::GetPhysicsWorld(), GetRigidBody(), 55.0f);
 
-	// 武器コライダーの更新
-	m_pWeaponCollider->Update(m_pSwordModel, 40.0f, 10.0f);
-
 	// ステートマシン更新
 	m_stateMachine.Update();
 
@@ -192,17 +166,13 @@ void CPlayer::Update(void)
 		Heal(1.0f);
 	}
 
-	// 武器コライダー用モデルの位置更新
-	m_pTipModel->SetPos(m_pWeaponCollider->GetCurrentTipPos());
-	m_pBaseModel->SetPos(m_pWeaponCollider->GetCurrentBasePos());
-
 #endif
 
 	// 向きの更新処理
 	UpdateRotation(0.09f);
 
 	// 移動入力があればプレイヤー向きを入力方向に
-	if (!m_pMotion->IsAttacking(ATTACK_01) && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f))
+	if (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f)
 	{
 		// Y成分だけを使いたいので目標の向きを取得
 		D3DXVECTOR3 rotDest = GetRotDest();
@@ -216,6 +186,12 @@ void CPlayer::Update(void)
 
 	// コライダーの位置更新(オフセットを設定)
 	UpdateCollider(D3DXVECTOR3(0, 35.0f, 0));// 足元に合わせる
+
+	if (GetPos().y < -280.0f)
+	{
+		// リスポーン処理
+		Respawn(D3DXVECTOR3(0.0f, 30.0f, -300.0f));
+	}
 
 	if (m_pShadowS != nullptr)
 	{
@@ -280,6 +256,40 @@ void CPlayer::Draw(void)
 
 #endif
 
+}
+//=============================================================================
+// リスポーン(直接設定)処理
+//=============================================================================
+void CPlayer::Respawn(D3DXVECTOR3 pos)
+{
+	if (CManager::GetMode() != MODE_GAME)
+	{
+		return;
+	}
+
+	D3DXVECTOR3 respawnPos = pos; // 任意の位置
+
+	GetPos() = respawnPos;
+
+	btRigidBody* pRigid = GetRigidBody();
+
+	if (pRigid)
+	{
+		pRigid->setLinearVelocity(btVector3(0, 0, 0));
+		pRigid->setAngularVelocity(btVector3(0, 0, 0));
+
+		// ワールド座標更新
+		btTransform trans;
+		trans.setIdentity();
+		trans.setOrigin(btVector3(respawnPos.x, respawnPos.y, respawnPos.z));
+
+		pRigid->setWorldTransform(trans);
+
+		if (pRigid->getMotionState())
+		{
+			pRigid->getMotionState()->setWorldTransform(trans);
+		}
+	}
 }
 //=============================================================================
 // レイによる接触判定
@@ -401,9 +411,9 @@ InputData CPlayer::GatherInput(void)
 	InputData input{};
 	input.moveDir = D3DXVECTOR3(0, 0, 0);
 	input.attack = false;
+	input.stealth = false;
 
 	CInputKeyboard* pKeyboard = CManager::GetInputKeyboard();	// キーボードの取得
-	CInputMouse* pMouse = CManager::GetInputMouse();			// マウスの取得
 	CInputJoypad* pJoypad = CManager::GetInputJoypad();			// ジョイパッドの取得
 	XINPUT_STATE* pStick = CInputJoypad::GetStickAngle();		// スティックの取得
 	CCamera* pCamera = CManager::GetCamera();					// カメラの取得
@@ -414,26 +424,26 @@ InputData CPlayer::GatherInput(void)
 		return input;
 	}
 
-	CEnemy* pEnemy = CGame::GetEnemy();
+	//// ---------------------------
+	//// 攻撃入力
+	//// ---------------------------
+	//if (pMouse->GetTrigger(0) || pJoypad->GetTrigger(pJoypad->JOYKEY_X))
+	//{
+	//	input.attack = true;
+	//}
 
-	if (pEnemy && pEnemy->IsDead())
+	// ---------------------------
+	// 忍び足入力
+	// ---------------------------
+	if (pKeyboard->GetPress(DIK_LCONTROL) || pJoypad->GetPressR2())
 	{
-		return input;
+		input.stealth = true;
 	}
 
 	// ---------------------------
-	// 攻撃入力
+	// タメージ状態中は移動入力無効化
 	// ---------------------------
-	if (pMouse->GetTrigger(0) || pJoypad->GetTrigger(pJoypad->JOYKEY_X))
-	{
-		input.attack = true;
-	}
-
-	// ---------------------------
-	// 攻撃中は移動入力無効化
-	// ---------------------------
-	if (m_pMotion->IsAttacking(ATTACK_01) || m_pMotion->IsCurrentMotion(BACKFRIP) || 
-		m_pMotion->IsCurrentMotion(ATTACK_JUMPSLASH) || m_pMotion->IsCurrentMotion(DAMAGE))
+	if (m_pMotion->IsCurrentMotion(DAMAGE))
 	{
 		return input;
 	}

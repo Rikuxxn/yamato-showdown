@@ -91,6 +91,9 @@ void CBlock::InitFactory(void)
 	m_BlockFactoryMap[CBlock::TYPE_GRASS]			= []() -> CBlock* { return new CGrassBlock(); };
 	m_BlockFactoryMap[CBlock::TYPE_TORCH_01]		= []() -> CBlock* { return new CTorchBlock(); };
 	m_BlockFactoryMap[CBlock::TYPE_WATER]			= []() -> CBlock* { return new CWaterBlock(); };
+	m_BlockFactoryMap[CBlock::TYPE_BURIED_TREASURE] = []() -> CBlock* { return new CBuriedTreasureBlock(); };
+	m_BlockFactoryMap[CBlock::TYPE_DOOR]			= []() -> CBlock* { return new CDoorBlock(); };
+	m_BlockFactoryMap[CBlock::TYPE_GHOSTOBJECT]		= []() -> CBlock* { return new CExitBlock(); };
 	m_BlockFactoryMap[CBlock::TYPE_WOODBOX]			= []() -> CBlock* { return new CWoodBoxBlock(); };
 }
 //=============================================================================
@@ -470,4 +473,65 @@ void CBlock::Respawn(D3DXVECTOR3 resPos)
 
 	// 動的に戻す
 	SetEditMode(false);
+}
+//=============================================================================
+// 簡易の当たり判定処理(イベント用)
+//=============================================================================
+bool CBlock::IsHitOBBvsAABB(const OBB& obb, const D3DXVECTOR3& aabbMin, const D3DXVECTOR3& aabbMax)
+{
+	// まずAABBの中心と半径を求める
+	D3DXVECTOR3 aabbCenter = (aabbMin + aabbMax) * 0.5f;
+	D3DXVECTOR3 aabbHalf = (aabbMax - aabbMin) * 0.5f;
+
+	// OBB→AABB座標に変換する行列を求める
+	D3DXVECTOR3 diff = aabbCenter - obb.center;
+
+	// 分離軸定理（SAT）
+	for (int i = 0; i < 3; i++)
+	{
+		// OBBの軸に対する投影距離
+		float proj = fabs(D3DXVec3Dot(&diff, &obb.axis[i]));
+		float rA = obb.halfSize[i];
+		float rB;
+		{
+			D3DXVECTOR3 axisX(1, 0, 0);
+			D3DXVECTOR3 axisY(0, 1, 0);
+			D3DXVECTOR3 axisZ(0, 0, 1);
+
+			rB =
+				aabbHalf.x * fabs(D3DXVec3Dot(&axisX, &obb.axis[i])) +
+				aabbHalf.y * fabs(D3DXVec3Dot(&axisY, &obb.axis[i])) +
+				aabbHalf.z * fabs(D3DXVec3Dot(&axisZ, &obb.axis[i]));
+		}
+
+		if (proj > rA + rB)
+		{
+			return false; // 軸で分離できた → 非衝突
+		}
+	}
+
+	// AABBの3軸でもチェック
+	const D3DXVECTOR3 aabbAxes[3] =
+	{
+		{1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1}
+	};
+
+	for (int i = 0; i < 3; i++)
+	{
+		float proj = fabs(D3DXVec3Dot(&diff, &aabbAxes[i]));
+		float rA =
+			obb.halfSize.x * fabs(D3DXVec3Dot(&obb.axis[0], &aabbAxes[i])) +
+			obb.halfSize.y * fabs(D3DXVec3Dot(&obb.axis[1], &aabbAxes[i])) +
+			obb.halfSize.z * fabs(D3DXVec3Dot(&obb.axis[2], &aabbAxes[i]));
+		float rB = aabbHalf[i];
+
+		if (proj > rA + rB)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

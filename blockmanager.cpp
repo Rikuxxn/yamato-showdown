@@ -84,7 +84,7 @@ void CBlockManager::Init(void)
 
 	InitThumbnailRenderTarget(pDevice);
 
-	LoadConfig("data/block_payload.json");
+	LoadConfig("data/model_list.json");
 
 	// サムネイルキャッシュ作成
 	GenerateThumbnailsForResources();
@@ -939,6 +939,10 @@ void CBlockManager::GenerateRandomMap(int seed)
 	// --- 灯籠補充 ---
 	EnsureTorchCount(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions, torchPositions);
 
+	// --- 埋蔵金補充 ---
+	std::vector<D3DXVECTOR3> treasurePositions;
+	EnsureBuriedTreasureCount(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, torchPositions, waterPositions, treasurePositions);
+
 	// --- 外周を草で囲む ---
 	GenerateOuterGrassBelt(GRID_X, GRID_Z, AREA_SIZE, offsetX, offsetZ, waterPositions);
 
@@ -1148,6 +1152,63 @@ void CBlockManager::EnsureTorchCount(int GRID_X, int GRID_Z, float AREA_SIZE,
 			offPos.y += 35.0f;
 			torch->SetPos(offPos);
 			torchPositions.push_back(pos);
+		}
+	}
+}
+//=============================================================================
+// 埋蔵金補充処理
+//=============================================================================
+void CBlockManager::EnsureBuriedTreasureCount(int GRID_X, int GRID_Z, float AREA_SIZE,
+	float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& torchPositions,
+	const std::vector<D3DXVECTOR3>& waterPositions, std::vector<D3DXVECTOR3>& treasurePositions)
+{
+	// 埋蔵金同士の最低距離
+	const float MIN_TORCH_DISTANCE = 5.0f * AREA_SIZE;
+
+	while ((int)treasurePositions.size() < 3)
+	{
+		float randX = offsetX + (rand() % GRID_X) * AREA_SIZE;
+		float randZ = offsetZ + (rand() % GRID_Z) * AREA_SIZE;
+		D3DXVECTOR3 pos(randX, 0.0f, randZ);
+
+		// 灯籠と被ったら飛ばす
+		if (IsCollidingWithTorch(pos, AREA_SIZE, torchPositions))
+		{
+			continue;
+		}
+
+		// 水と被ったら飛ばす
+		if (IsCollidingWithWater(pos, AREA_SIZE, waterPositions))
+		{
+			continue;
+		}
+
+		bool tooClose = false;
+		for (auto& t : treasurePositions)
+		{
+			float dx = t.x - pos.x;
+			float dz = t.z - pos.z;
+			if (dx * dx + dz * dz < (MIN_TORCH_DISTANCE * MIN_TORCH_DISTANCE))
+			{
+				tooClose = true;
+				break;
+			}
+		}
+
+		// 近すぎたら飛ばす
+		if (tooClose)
+		{
+			continue;
+		}
+
+		CBlock* treasure = CreateBlock(CBlock::TYPE_BURIED_TREASURE, pos);
+
+		if (treasure)
+		{
+			D3DXVECTOR3 offPos = treasure->GetPos();
+			offPos.y -= 3.0f;
+			treasure->SetPos(offPos);
+			treasurePositions.push_back(pos);
 		}
 	}
 }
@@ -1373,6 +1434,24 @@ void CBlockManager::CreateGrassCluster(const D3DXVECTOR3& centerPos, float AREA_
 bool CBlockManager::IsCollidingWithWater(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& waterPositions)
 {
 	for (auto& wp : waterPositions)
+	{
+		if (fabs(wp.x - pos.x) < AREA_SIZE * 0.5f &&
+			fabs(wp.z - pos.z) < AREA_SIZE * 0.5f)
+		{
+			// 重なった
+			return true;
+		}
+	}
+
+	// 重なっていない
+	return false;
+}
+//=============================================================================
+// 灯籠との重なり判定処理
+//=============================================================================
+bool CBlockManager::IsCollidingWithTorch(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& torchPositions)
+{
+	for (auto& wp : torchPositions)
 	{
 		if (fabs(wp.x - pos.x) < AREA_SIZE * 0.5f &&
 			fabs(wp.z - pos.z) < AREA_SIZE * 0.5f)

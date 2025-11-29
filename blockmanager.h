@@ -46,10 +46,14 @@ public:
     void EnsureTorchCount(int GRID_X, int GRID_Z, float AREA_SIZE,
         float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& waterPositions,
         std::vector<D3DXVECTOR3>& torchPositions);
+    void EnsureBuriedTreasureCount(int GRID_X, int GRID_Z, float AREA_SIZE,
+        float offsetX, float offsetZ, const std::vector<D3DXVECTOR3>& torchPositions,
+        const std::vector<D3DXVECTOR3>& waterPositions, std::vector<D3DXVECTOR3>& treasurePositions);
     void CreateGrassCluster(const D3DXVECTOR3& centerPos, float AREA_SIZE,
         int GRID_X, int GRID_Z, float offsetX, float offsetZ,
         const std::vector<D3DXVECTOR3>& waterPositions);
     bool IsCollidingWithWater(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& waterPositions);
+    bool IsCollidingWithTorch(const D3DXVECTOR3& pos, float AREA_SIZE, const std::vector<D3DXVECTOR3>& torchPositions);
     void ApplyRandomGrassTransform(CBlock* block);
     void FillFloor(int GRID_X, int GRID_Z, float AREA_SIZE);
     void GenerateOuterGrassBelt(int GRID_X, int GRID_Z, float AREA_SIZE,

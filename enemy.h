@@ -40,16 +40,10 @@ public:
 	{
 		NEUTRAL = 0,		// 待機
 		MOVE,				// 移動
-		ACCUMULATION,		// 溜め
-		ATTACK_01,			// 攻撃1(溜めの後)
+		ATTACK_01,			// 攻撃(スライド)
 		CLOSE_ATTACK_01,	// 近距離攻撃1
 		CLOSE_ATTACK_02,	// 近距離攻撃2
-		DAMAGE,				// ダメージ
-		DEATH,				// 死亡
-		SLIDEMOVE,			// スライド移動
 		CAUTION,			// 警戒
-		EVADE,				// 回避
-		GUARD,				// ガード
 		MAX
 	}ENEMY_MOTION;
 
@@ -59,14 +53,10 @@ public:
 		ACTION_NONE,
 		AI_NEUTRAL,
 		AI_MOVE,
-		AI_ACCUMULATE,
 		AI_ATTACK_01,
 		AI_CLOSE_ATTACK_01,
 		AI_CLOSE_ATTACK_02,
-		AI_SLIDEMOVE,
 		AI_CAUTION,
-		AI_EVADE,
-		AI_GUARD,
 		AI_MAX
 	}EEnemyAction;
 
@@ -76,11 +66,13 @@ public:
 	void Update(void);
 	void Draw(void);
 
+	bool IsPlayerInSight(CPlayer* pPlayer);
+
+
 	//*****************************************************************************
 	// setter関数
 	//*****************************************************************************
 	void SetRequestedAction(EEnemyAction action) { m_requestedAction = action; }
-	void SetIsDeath(bool flag) { m_isDead = flag; }
 
 	//*****************************************************************************
 	// getter関数
@@ -91,9 +83,6 @@ public:
 	D3DXVECTOR3 GetForward(void);
 	CEnemyAI* GetAI(void) { return m_pAI.get(); }
 	EEnemyAction GetRequestedAction(void) const { return m_requestedAction; }
-	bool IsDeath(void) { return m_isDead; }// 死んだかどうか
-
-	void Damage(float fDamage) override;
 
 private:
 	static constexpr int MAX_PARTS = 32;	// 最大パーツ数
@@ -110,10 +99,11 @@ private:
 	CObjectX* m_pTipModel;	// 武器コライダー用モデル
 	CObjectX* m_pBaseModel;	// 武器コライダー用モデル
 	std::unique_ptr<CWeaponCollider> m_pWeaponCollider;// 武器の当たり判定へのポインタ
+	float m_sightRange;							//視界距離
+	float m_sightAngle;				//視界範囲
 
 	std::unique_ptr<CEnemyAI> m_pAI;
 	EEnemyAction m_requestedAction;
-	bool m_isDead;
 
 	// ステートを管理するクラスのインスタンス
 	StateMachine<CEnemy> m_stateMachine;

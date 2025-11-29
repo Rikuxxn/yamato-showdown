@@ -213,92 +213,6 @@ void CWaterParticle::Update(void)
 
 
 //=============================================================================
-// オーラパーティクルのコンストラクタ
-//=============================================================================
-CAuraParticle::CAuraParticle()
-{
-
-}
-//=============================================================================
-// オーラパーティクルのデストラクタ
-//=============================================================================
-CAuraParticle::~CAuraParticle()
-{
-	// なし
-}
-//=============================================================================
-// オーラパーティクルの初期化処理
-//=============================================================================
-HRESULT CAuraParticle::Init(void)
-{
-	// テクスチャを設定しておく
-	SetPath("data/TEXTURE/effect000.jpg");
-
-	// パーティクルの初期化処理
-	CParticle::Init();
-
-	return S_OK;
-}
-//=============================================================================
-// オーラパーティクルの更新処理
-//=============================================================================
-void CAuraParticle::Update(void)
-{
-	int nMaxParticle = GetMaxParticle();
-
-	// パーティクル生成
-	for (int nCnt = 0; nCnt < nMaxParticle; nCnt++)//発生させたい粒子の数
-	{
-		EffectDesc desc;
-
-		// テクスチャの指定
-		desc.path = "data/TEXTURE/effect000.jpg";
-
-		// 半径を決めてランダム位置にスポーン
-		float radius = 40.0f; // この範囲から出す
-		float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
-		float height = (rand() % 60) - 30.0f; // -30～30の高さ
-
-		// 生成位置
-		desc.pos;
-		desc.pos.x = GetPos().x + cosf(angle) * radius;
-		desc.pos.z = GetPos().z + sinf(angle) * radius;
-		desc.pos.y = GetPos().y + height;
-
-		// ターゲットに向かう方向ベクトル
-		D3DXVECTOR3 dir = GetPos() - desc.pos;
-		D3DXVec3Normalize(&dir, &dir);
-
-		// 速度
-		float speed = (rand() % 2) + 0.5f;
-
-		desc.move = dir * speed;
-
-		// 色の設定
-		desc.col = GetCol();
-
-		// 半径の設定
-		desc.fRadius = 8.0f + (rand() % 8);
-
-		// 寿命の設定
-		desc.nLife = GetLife();
-
-		// 重力の設定
-		desc.fGravity = 0.0f;
-
-		// 半径の減衰量の設定
-		desc.fDecRadius = 0.5f;
-
-		// エフェクトの設定
-		CEffect::Create(desc);
-	}
-
-	// パーティクルの更新処理
-	CParticle::Update();
-}
-
-
-//=============================================================================
 // 移動時パーティクルのコンストラクタ
 //=============================================================================
 CMoveParticle::CMoveParticle()
@@ -620,6 +534,83 @@ void CBlossomParticle::Update(void)
 
 		// 半径の減衰量の設定
 		desc.fDecRadius = 0.03f;
+
+		// エフェクトの設定
+		CEffect::Create(desc);
+	}
+
+	// パーティクルの更新処理
+	CParticle::Update();
+}
+
+
+//=============================================================================
+// お宝パーティクルのコンストラクタ
+//=============================================================================
+CTreasureParticle::CTreasureParticle()
+{
+
+}
+//=============================================================================
+// お宝パーティクルのデストラクタ
+//=============================================================================
+CTreasureParticle::~CTreasureParticle()
+{
+	// なし
+}
+//=============================================================================
+// お宝パーティクルの初期化処理
+//=============================================================================
+HRESULT CTreasureParticle::Init(void)
+{
+	// テクスチャを設定しておく
+	SetPath("data/TEXTURE/treasure_effect.png");
+
+	// パーティクルの初期化処理
+	CParticle::Init();
+
+	return S_OK;
+}
+//=============================================================================
+// お宝パーティクルの更新処理
+//=============================================================================
+void CTreasureParticle::Update(void)
+{
+	int nMaxParticle = GetMaxParticle();
+
+	// パーティクル生成
+	for (int nCnt = 0; nCnt < nMaxParticle; nCnt++)//発生させたい粒子の数
+	{
+		EffectDesc desc;
+
+		// テクスチャの指定
+		desc.path = "data/TEXTURE/treasure_effect.png";
+
+		// 位置
+		desc.pos = GetPos();
+
+		// ランダムな角度で横に広がる
+		float angle = ((rand() % 360) / 180.0f) * D3DX_PI;
+		float speed = (rand() % 200) / 100.0f + 0.2f;
+
+		desc.move.x = cosf(angle) * speed;
+		desc.move.z = sinf(angle) * speed;
+		desc.move.y = (rand() % 300) / 100.0f + 0.9f; // 上方向
+
+		// 色の設定
+		desc.col = GetCol();
+
+		// 半径の設定
+		desc.fRadius = 35.0f + (rand() % 40);
+
+		// 寿命の設定
+		desc.nLife = GetLife();
+
+		// 重力の設定
+		desc.fGravity = 0.01f;
+
+		// 半径の減衰量の設定
+		desc.fDecRadius = 1.5f;
 
 		// エフェクトの設定
 		CEffect::Create(desc);

@@ -25,8 +25,9 @@
 // 入力データ構造体
 struct InputData
 {
-	D3DXVECTOR3 moveDir;      // 前後移動ベクトル
-	bool attack;              // 攻撃入力
+	D3DXVECTOR3 moveDir;	// 前後移動ベクトル
+	bool attack;			// 攻撃入力
+	bool stealth;			// 忍び足入力
 };
 
 //*****************************************************************************
@@ -38,17 +39,16 @@ public:
 	CPlayer();
 	~CPlayer();
 
-	static constexpr float PLAYER_SPEED = 20.0f;				// 移動スピード
+	static constexpr float PLAYER_SPEED = 22.0f;				// 移動時スピード
+	static constexpr float STEALTH_SPEED = 8.0f;				// 忍び移動時スピード
 
 	// プレイヤーモーションの種類
 	typedef enum
 	{
 		NEUTRAL = 0,		// 待機
 		MOVE,				// 移動
-		ATTACK_01,			// 攻撃1
-		BACKFRIP,			// バク転
-		ATTACK_JUMPSLASH,	// ジャンプ斬り
-		DAMAGE,
+		STEALTH_MOVE,		// 忍び足
+		DAMAGE,				// ダメージ
 		MAX
 	}PLAYER_MOTION;
 
@@ -57,6 +57,7 @@ public:
 	void Uninit(void);
 	void Update(void);
 	void Draw(void);
+	void Respawn(D3DXVECTOR3 pos);
 
 	//*****************************************************************************
 	// flagment関数
@@ -73,14 +74,11 @@ public:
 	// getter関数
 	//*****************************************************************************
 	CMotion* GetMotion(void) { return m_pMotion; }
-	bool GetPlayerUse(void) const { return m_playerUse; }
 	bool GetOnGround(void) { return m_bOnGround; }
 	bool GetIsMoving(void) const { return m_bIsMoving; }
 	D3DXVECTOR3 GetForward(void);
 	InputData GatherInput(void);
 	CBlock* FindFrontBlockByRaycast(float rayLength);
-	CModel* GetWeapon(void) { return m_pSwordModel; }
-	CWeaponCollider* GetWeaponCollider(void) { return m_pWeaponCollider.get(); }
 
 	// ステート用にフラグ更新
 	void UpdateMovementFlags(const D3DXVECTOR3& moveDir)
@@ -101,13 +99,8 @@ private:
 	CMotion* m_pMotion;					// モーションへのポインタ
 	CDebugProc3D* m_pDebug3D;			// 3Dデバッグ表示へのポインタ
 	int m_nNumModel;					// モデル(パーツ)の総数
-	bool m_playerUse;					// 使われているかどうか
 	bool m_bIsMoving;					// 移動入力フラグ
 	bool m_bOnGround;					// 接地フラグ
-	CModel* m_pSwordModel; // 武器モデルのポインタ
-	CObjectX* m_pTipModel;	// 武器コライダー用モデル
-	CObjectX* m_pBaseModel;	// 武器コライダー用モデル
-	std::unique_ptr<CWeaponCollider> m_pWeaponCollider;// 武器の当たり判定へのポインタ
 	bool m_isInGrass;
 	bool m_isInTorch;
 

@@ -39,6 +39,8 @@ public:
 	typedef enum
 	{
 		TYPE_WALL_01 = 0,
+		TYPE_WALL_TOP,
+		TYPE_WALL_MINI,
 		TYPE_FLOOR,
 		TYPE_TORCH_01,
 		TYPE_ROCK,
@@ -46,10 +48,20 @@ public:
 		TYPE_WATER,
 		TYPE_FLOOR2,
 		TYPE_BLOSSOM_TREE,
+		TYPE_BURIED_TREASURE,
+		TYPE_DOOR,
+		TYPE_GHOSTOBJECT,
 
 		TYPE_WOODBOX,
 		TYPE_MAX
 	}TYPE;
+
+	struct OBB
+	{
+		D3DXVECTOR3 center;
+		D3DXVECTOR3 axis[3];  // x,y,z軸の方向ベクトル
+		D3DXVECTOR3 halfSize;
+	};
 
 	static CBlock* Create(const char* pFilepath, D3DXVECTOR3 pos, D3DXVECTOR3 rot,D3DXVECTOR3 size, TYPE type);	// ブロックの生成
 	virtual btCollisionShape* CreateCollisionShape(const D3DXVECTOR3& size)
@@ -71,6 +83,7 @@ public:
 	void ReleasePhysics(void);															// Physics破棄用
 	virtual void Respawn(D3DXVECTOR3 resPos);
 	virtual void DrawCustomUI(void) {}													// 派生クラスのGUI特殊処理用
+	bool IsHitOBBvsAABB(const OBB& obb, const D3DXVECTOR3& aabbMin, const D3DXVECTOR3& aabbMax);
 	virtual void UpdateLight(void) {}
 
 	virtual void SaveToJson(json& b)

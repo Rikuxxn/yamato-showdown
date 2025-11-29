@@ -12,6 +12,9 @@
 //*****************************************************************************
 #include "block.h"
 
+// 前方宣言
+class CPlayer;
+
 //*****************************************************************************
 // 木箱ブロッククラス
 //*****************************************************************************
@@ -72,7 +75,68 @@ public:
 
 private:
 	int m_counter;	// 生成カウンター
-	bool m_isHit;	// 当たっているkあ
+	bool m_isHit;	// 当たっているか
+};
+
+//*****************************************************************************
+// 埋蔵金ブロッククラス
+//*****************************************************************************
+class CBuriedTreasureBlock : public CBlock
+{
+public:
+	CBuriedTreasureBlock();
+	~CBuriedTreasureBlock();
+
+	static TYPE GetStaticType(void) { return TYPE_BURIED_TREASURE; }
+
+	HRESULT Init(void);
+	void Update(void);
+
+	int GetCollisionFlags(void) const override { return btCollisionObject::CF_NO_CONTACT_RESPONSE; }
+
+private:
+	static constexpr float TRIGGER_DISTANCE = 100.0f;	// 判定距離
+	static constexpr int SPAWN_TIME = 180;				// 生成までの時間
+
+	int m_effectTimer;									// エフェクト生成タイマー
+};
+
+//*****************************************************************************
+// 扉ブロッククラス
+//*****************************************************************************
+class CDoorBlock : public CBlock
+{
+public:
+	CDoorBlock();
+	~CDoorBlock();
+
+	static TYPE GetStaticType(void) { return TYPE_DOOR; }
+
+	int GetCollisionFlags(void) const override { return btCollisionObject::CF_NO_CONTACT_RESPONSE; }
+
+	void Update(void);
+
+private:
+
+};
+
+//*****************************************************************************
+// 出口判定ブロッククラス
+//*****************************************************************************
+class CExitBlock : public CBlock
+{
+public:
+	CExitBlock();
+	~CExitBlock();
+
+	static TYPE GetStaticType(void) { return TYPE_GHOSTOBJECT; }
+
+	void Update(void);
+	bool IsHitPlayer(CPlayer* pPlayer);
+
+	bool IsEscape(void) { return m_isEscape; }
+private:
+	bool m_isEscape;	// 脱出したかどうか
 };
 
 #endif

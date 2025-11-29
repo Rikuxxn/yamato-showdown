@@ -93,41 +93,6 @@ private:
 };
 
 //*****************************************************************************
-// 石像の炎パーティクルクラス
-//*****************************************************************************
-class CStatueFireParticle : public CParticle
-{
-public:
-	CStatueFireParticle();
-	~CStatueFireParticle();
-
-	HRESULT Init(void);
-	void Update(void);
-
-private:
-
-};
-
-//*****************************************************************************
-// 火炎放射パーティクルクラス
-//*****************************************************************************
-class CFlamethrowerParticle : public CParticle
-{
-public:
-	CFlamethrowerParticle();
-	~CFlamethrowerParticle();
-
-	HRESULT Init(void);
-	void Update(void);
-
-	void SetSpeedScale(float scale) { m_speedScale = scale; }
-	float GetSpeedScale() const { return m_speedScale; }
-
-private:
-	float m_speedScale;  // 速度倍率
-};
-
-//*****************************************************************************
 // 水しぶきパーティクルクラス
 //*****************************************************************************
 class CWaterParticle : public CParticle
@@ -135,22 +100,6 @@ class CWaterParticle : public CParticle
 public:
 	CWaterParticle();
 	~CWaterParticle();
-
-	HRESULT Init(void);
-	void Update(void);
-
-private:
-
-};
-
-//*****************************************************************************
-// オーラパーティクルクラス
-//*****************************************************************************
-class CAuraParticle : public CParticle
-{
-public:
-	CAuraParticle();
-	~CAuraParticle();
 
 	HRESULT Init(void);
 	void Update(void);
@@ -214,6 +163,22 @@ class CBlossomParticle : public CParticle
 public:
 	CBlossomParticle();
 	~CBlossomParticle();
+
+	HRESULT Init(void);
+	void Update(void);
+
+private:
+
+};
+
+//*****************************************************************************
+// お宝パーティクルクラス
+//*****************************************************************************
+class CTreasureParticle : public CParticle
+{
+public:
+	CTreasureParticle();
+	~CTreasureParticle();
 
 	HRESULT Init(void);
 	void Update(void);

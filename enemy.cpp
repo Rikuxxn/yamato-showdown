@@ -31,7 +31,9 @@ CEnemy::CEnemy()
 	m_pTipModel			= nullptr;						// 武器コライダー用モデル
 	m_pBaseModel		= nullptr;						// 武器コライダー用モデル
 	m_pWeaponCollider	= nullptr;						// 武器の当たり判定へのポインタ
-	m_requestedAction = ACTION_NONE;
+	m_requestedAction	= ACTION_NONE;					// AIの行動リクエスト
+	m_sightRange		= 165.0f;						//視界距離
+	m_sightAngle		= D3DXToRadian(110.0f);			//視界範囲
 }
 //=============================================================================
 // デストラクタ
@@ -113,12 +115,6 @@ HRESULT CEnemy::Init(void)
 	// 敵AIの生成
 	m_pAI = make_unique<CEnemyAI>();
 
-	// HPの設定
-	SetHp(100.0f);
-
-	// ゲージを生成
-	SetGuages({ 570.0f, 100.0f, 0.0f }, { 1.0f,0.0f,0.0f,1.0f }, { 0.1f,0.1f,0.1f,1.0f }, 620.0f, 10.0f);
-
 	return S_OK;
 }
 //=============================================================================
@@ -175,10 +171,13 @@ void CEnemy::Update(void)
 
 #endif
 
+	// プレイヤーの取得
+	CPlayer* pPlayer = CGame::GetPlayer();
+
 	// AIを更新（現在の行動のリクエスト）
-	if (m_pAI)
+	if (m_pAI && pPlayer)
 	{
-		m_pAI->Update(this, CGame::GetPlayer());
+		m_pAI->Update(this, pPlayer);
 	}
 
 	// ステートマシン更新
@@ -189,6 +188,12 @@ void CEnemy::Update(void)
 
 	// コライダーの位置更新(オフセットを設定)
 	UpdateCollider(D3DXVECTOR3(0, 45.0f, 0));// 足元に合わせる
+
+	//// 視界内判定
+	//if (pPlayer)
+	//{
+	//	IsPlayerInSight(pPlayer);
+	//}
 
 	if (m_pShadowS != nullptr)
 	{
@@ -270,28 +275,39 @@ D3DXVECTOR3 CEnemy::GetForward(void)
 	return forward;
 }
 //=============================================================================
-// ダメージ処理
+//視界内判定
 //=============================================================================
-void CEnemy::Damage(float fDamage)
+bool CEnemy::IsPlayerInSight(CPlayer* pPlayer)
 {
-	if (!m_pMotion->IsCurrentMotion(DAMAGE) && !m_pMotion->IsCurrentMotion(GUARD))
-	{
-		// まず共通のHP処理
-		CCharacter::Damage(fDamage);
+	// 敵の正面ベクトルを取得
+	D3DXVECTOR3 enemyFront = GetForward();
 
-		if (!m_pMotion->IsCurrentMotion(ACCUMULATION) && !m_pMotion->IsCurrentMotion(GUARD) &&
-			m_pMotion->IsCurrentMotion(CLOSE_ATTACK_01))
+	// プレイヤーとの方向ベクトル
+	D3DXVECTOR3 toPlayer = pPlayer->GetPos() - GetPos();
+
+	// プレイヤー方向ベクトルを正規化
+	D3DXVec3Normalize(&toPlayer, &toPlayer);
+
+	// 敵の正面ベクトルも正規化
+	D3DXVec3Normalize(&enemyFront, &enemyFront);
+
+	// ベクトルの内積を計算
+	float dotProduct = D3DXVec3Dot(&enemyFront, &toPlayer);
+
+	// 内積から視野内か判定
+	if (dotProduct > cosf(m_sightAngle * 0.5f)) // 視野角の半分で判定
+	{
+		// プレイヤーとの距離を計算
+		float distanceSquared =
+			(GetPos().x - pPlayer->GetPos().x) * (GetPos().x - pPlayer->GetPos().x) +
+			(GetPos().y - pPlayer->GetPos().y) * (GetPos().y - pPlayer->GetPos().y) +
+			(GetPos().z - pPlayer->GetPos().z) * (GetPos().z - pPlayer->GetPos().z);
+
+		if (distanceSquared <= m_sightRange * m_sightRange)
 		{
-			// ダメージステートへ
-			m_stateMachine.ChangeState<CEnemy_DamageState>();
+			return true; // プレイヤーは視界内
 		}
 	}
 
-	// 死亡時
-	if (IsDead())
-	{
-		// 死亡状態
-		m_stateMachine.ChangeState<CEnemy_DeadState>();
-		return;
-	}
+	return false; // 視界外
 }

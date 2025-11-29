@@ -214,7 +214,8 @@ void CWaterBlock::Update(void)
 		m_isHit = false;
 	}
 
-	if (pPlayer && isOverlap && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f))
+	if (pPlayer && isOverlap && (input.moveDir.x != 0.0f || input.moveDir.z != 0.0f) &&
+		!pPlayer->GetMotion()->IsCurrentMotion(CPlayer::STEALTH_MOVE))
 	{
 		m_counter++;
 
@@ -251,4 +252,177 @@ void CWaterBlock::Update(void)
 		// カウンターをリセット
 		m_counter = 0;
 	}
+}
+
+
+//=============================================================================
+// 埋蔵金ブロックのコンストラクタ
+//=============================================================================
+CBuriedTreasureBlock::CBuriedTreasureBlock()
+{
+	// 値のクリア
+	m_effectTimer = 0;
+}
+//=============================================================================
+// 埋蔵金ブロックのデストラクタ
+//=============================================================================
+CBuriedTreasureBlock::~CBuriedTreasureBlock()
+{
+	// なし
+}
+//=============================================================================
+// 埋蔵金ブロックの初期化処理
+//=============================================================================
+HRESULT CBuriedTreasureBlock::Init(void)
+{
+	// ブロックの初期化処理
+	CBlock::Init();
+
+	return S_OK;
+}
+//=============================================================================
+// 埋蔵金ブロックの更新処理
+//=============================================================================
+void CBuriedTreasureBlock::Update(void)
+{
+	// ブロックの更新処理
+	CBlock::Update();
+
+	m_effectTimer++;
+
+	if (m_effectTimer >= SPAWN_TIME)
+	{
+		m_effectTimer = 0;
+
+		// お宝エフェクトの生成
+		CParticle::Create<CTreasureParticle>(INIT_VEC3, GetPos(), D3DXCOLOR(0.6f, 0.6f, 0.0f, 0.3f), 50, 10);
+	}
+
+	CPlayer* pPlayer = CGame::GetPlayer();
+
+	if (!pPlayer)
+	{
+		return;
+	}
+
+	// 対象との距離を求めるためにプレイヤーの位置を取得
+	D3DXVECTOR3 playerPos = pPlayer->GetPos();
+
+	// 対象との距離を求める
+	D3DXVECTOR3 disPos = playerPos - GetPos();
+	float distance = D3DXVec3Length(&disPos);
+
+	// 入力判定をするために各インプット処理を取得
+	CInputMouse* pMouse = CManager::GetInputMouse();
+	CInputJoypad* pJoypad = CManager::GetInputJoypad();
+
+	// 範囲内に入ったら
+	if (distance < TRIGGER_DISTANCE)
+	{
+		// 任意のボタンを押し続けられていたら
+		if (pMouse->GetPress(0) || pJoypad->GetPress(CInputJoypad::JOYKEY_A))
+		{
+			// 削除予約
+			Kill();
+		}
+	}
+}
+
+//=============================================================================
+// 扉ブロックのコンストラクタ
+//=============================================================================
+CDoorBlock::CDoorBlock()
+{
+	// 値のクリア
+
+}
+//=============================================================================
+// 扉ブロックのデストラクタ
+//=============================================================================
+CDoorBlock::~CDoorBlock()
+{
+	// なし
+}
+//=============================================================================
+// 扉ブロックの更新処理
+//=============================================================================
+void CDoorBlock::Update(void)
+{
+	// ブロックの更新処理
+	CBlock::Update();
+
+}
+
+
+//=============================================================================
+// 出口判定ブロックのコンストラクタ
+//=============================================================================
+CExitBlock::CExitBlock()
+{
+	// 値のクリア
+	m_isEscape = false;
+}
+//=============================================================================
+// 出口判定ブロックのデストラクタ
+//=============================================================================
+CExitBlock::~CExitBlock()
+{
+	// なし
+}
+//=============================================================================
+// 出口判定ブロックのデ更新処理
+//=============================================================================
+void CExitBlock::Update(void)
+{
+	// ブロックの更新処理
+	CBlock::Update();
+
+
+
+}
+//=============================================================================
+// 接触判定処理
+//=============================================================================
+bool CExitBlock::IsHitPlayer(CPlayer* pPlayer)
+{
+	//=====================================================================
+	// プレスブロック側（OBB）
+	//=====================================================================
+	OBB obb;
+	obb.center = GetPos();
+
+	D3DXMATRIX world = GetWorldMatrix();
+	obb.axis[0] = D3DXVECTOR3(world._11, world._12, world._13);
+	obb.axis[1] = D3DXVECTOR3(world._21, world._22, world._23);
+	obb.axis[2] = D3DXVECTOR3(world._31, world._32, world._33);
+
+	// 軸は念のため正規化
+	for (int i = 0; i < 3; i++)
+		D3DXVec3Normalize(&obb.axis[i], &obb.axis[i]);
+
+	// モデルサイズとスケール適用
+	D3DXVECTOR3 modelSize = GetModelSize();
+	D3DXVECTOR3 scale = GetSize();
+	obb.halfSize.x = (modelSize.x * scale.x) * 0.5f;
+	obb.halfSize.y = (modelSize.y * scale.y) * 0.5f;
+	obb.halfSize.z = (modelSize.z * scale.z) * 0.5f;
+
+	//=========================================================================
+	// プレイヤー側（AABB）
+	//=========================================================================
+
+	// カプセルコライダーのサイズからAABBサイズを計算
+	D3DXVECTOR3 pSize;
+	pSize.x = pPlayer->GetRadius() * 2.0f;
+	pSize.z = pPlayer->GetRadius() * 2.0f;
+	pSize.y = pPlayer->GetHeight() + pPlayer->GetRadius() * 2.0f;
+
+	// 最小値と最大値を求める
+	D3DXVECTOR3 playerMin = pPlayer->GetColliderPos() - pSize * 0.5f;
+	D3DXVECTOR3 playerMax = pPlayer->GetColliderPos() + pSize * 0.5f;
+
+	//=========================================================================
+	// 交差チェック
+	//=========================================================================
+	return IsHitOBBvsAABB(obb, playerMin, playerMax);
 }
